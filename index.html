@@ -1,5 +1,6 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>入院紀錄檢查表</title><meta name="description" content="互動式入院紀錄檢查表：家族樹、中英對照 ROS、身體檢查步驟、輸出 PDF"></head><body>
 <style>
+[hidden] { display: none !important; }
 /* Layout: one column of section cards under a sticky section nav; checklists wrap into grids; PE panels appear per selected exam. */
 :root {
   --bg: #f3f5f4;
@@ -181,6 +182,28 @@ details.steps > summary { cursor: pointer; font-weight: 700; font-size: .92rem; 
   .gallery img { max-width: 45%; break-inside: avoid; }
   .lightbox { display: none !important; }
 }
+
+/* generated-PDF mode (home-screen web apps cannot print): same look as print */
+html.pdf-mode { --bg: #fff; --card: #fff; --fg: #111; --muted: #555; --line: #bbb; --mark: #eee; --accent: #1f5c57; --affected: #444; --warn: #8a3b26; color-scheme: light; }
+html.pdf-mode body { background: #fff; }
+html.pdf-mode .wrap { width: 760px; max-width: none; padding: 0 0 0 0; margin: 0; }
+html.pdf-mode header.top { position: static; border: 0; padding: 0 0 6px; }
+html.pdf-mode .nav, html.pdf-mode #pdfBtn, html.pdf-mode .pdf-msg, html.pdf-mode .ft-bar, html.pdf-mode .ft-edit, html.pdf-mode .ft-legend, html.pdf-mode .pe-pick, html.pdf-mode .reset-wrap, html.pdf-mode .rowhead span:last-child, html.pdf-mode .row button, html.pdf-mode [data-addrow], html.pdf-mode .sub-h:has(+ .pe-pick), html.pdf-mode #pdfSheet { display: none !important; }
+html.pdf-mode .card { border: 0; border-top: 1.5px solid #888; border-radius: 0; padding: 10px 0 4px; margin-top: 8px; }
+html.pdf-mode input[type="text"], html.pdf-mode textarea { display: none !important; }
+html.pdf-mode .print-val { display: block; min-height: 1.4em; border-bottom: 1px solid #ccc; padding: 2px 4px; white-space: pre-wrap; font-size: 13px; }
+html.pdf-mode .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.pdf-mode .fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.pdf-mode .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
+html.pdf-mode .item { padding: 4px 0; }
+html.pdf-mode .item input[type="checkbox"], html.pdf-mode .step input[type="checkbox"] { width: 15px; height: 15px; }
+html.pdf-mode .item:not(:has(input:checked)) .z { color: #777; }
+html.pdf-mode .ft-scroll { border: 0; overflow: visible; }
+html.pdf-mode #ftSvg { width: auto !important; max-width: 100% !important; }
+html.pdf-mode .gallery img { max-width: 45%; }
+#pdfSheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px rgba(0,0,0,.15); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+#pdfSheet p { margin: 0; font-size: .9rem; flex: 1 1 200px; }
+#pdfSheet .acts { display: flex; gap: 8px; }
 @media (max-width: 520px) {
   .row, .rowhead { grid-template-columns: minmax(0, 1fr) auto; }
   .row input:first-child { grid-column: 1 / -1; }
@@ -367,6 +390,7 @@ details.steps > summary { cursor: pointer; font-weight: 700; font-size: .92rem; 
     </div>
   </section>
 
+  <div id="pdfSheet" hidden="" role="dialog" aria-label="PDF"><p id="pdfSheetMsg">PDF 製作中…</p><div class="acts"><button type="button" class="solid" id="pdfShare" hidden="">分享／儲存 PDF</button><button type="button" id="pdfClose">關閉</button></div></div>
   <div class="reset-wrap"><button type="button" class="danger" id="reset">清除所有內容</button></div>
 </div>
 
@@ -744,12 +768,83 @@ function preparePrint() {
 }
 window.addEventListener("beforeprint", preparePrint);
 window.addEventListener("afterprint", () => { document.title = "入院紀錄檢查表"; });
-$("pdfBtn").addEventListener("click", () => {
+/* Home-screen web apps (iOS standalone) ignore window.print(), so build the PDF in the page instead. */
+const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+function loadScript(src) {
+  return new Promise((res, rej) => { if ([...document.scripts].some(x => x.src === src)) return res();
+    const sc = document.createElement("script"); sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error("load")); document.head.appendChild(sc); });
+}
+function inlineSvgStyles(svg) {
+  svg.querySelectorAll("*").forEach(el => {
+    const cs = getComputedStyle(el);
+    ["fill", "stroke", "stroke-width", "font-size", "font-weight", "font-family"].forEach(k => { const v = cs.getPropertyValue(k); if (v) el.setAttribute(k, v); });
+  });
+}
+let pdfFile = null;
+function sheet(msg, canShare) {
+  $("pdfSheet").hidden = false; $("pdfSheetMsg").textContent = msg; $("pdfShare").hidden = !canShare;
+}
+async function buildPDF() {
+  sheet("PDF 製作中，請稍候（約 5–20 秒）…", false);
+  await loadScript("lib/html2canvas.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"));
+  await loadScript("lib/jspdf.umd.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"));
+  preparePrint();
+  const root = document.documentElement; root.classList.add("pdf-mode");
+  const svg = $("ftSvg"); inlineSvgStyles(svg);
+  const clone = svg.cloneNode(true); clone.removeAttribute("style"); clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const ftImg = new Image(); ftImg.id = "ftPdfImg"; ftImg.style.cssText = "display:block;margin:0 auto;max-width:100%;height:auto";
+  ftImg.width = +svg.getAttribute("width"); ftImg.height = +svg.getAttribute("height");
+  await new Promise(r => { ftImg.onload = r; ftImg.onerror = r; ftImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone)); });
+  svg.style.display = "none"; svg.insertAdjacentElement("afterend", ftImg);
+  await new Promise(r => setTimeout(r, 120));
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    const M = 10, PW = 210 - 2 * M, PH = 297 - 2 * M; let y = M;
+    const blocks = [document.querySelector("header.top h1"), ...document.querySelectorAll(".wrap > section.card")];
+    for (const el of blocks) {
+      const c = await html2canvas(el, { scale: 1.6, backgroundColor: "#ffffff", windowWidth: 1000, useCORS: true, logging: false });
+      const mmPerPx = PW / c.width; let off = 0;
+      while (off < c.height) {
+        const room = (M + PH - y) / mmPerPx;
+        if (room < 60 && y > M) { doc.addPage(); y = M; continue; }
+        const h = Math.min(c.height - off, Math.floor(room));
+        const part = document.createElement("canvas"); part.width = c.width; part.height = h;
+        part.getContext("2d").drawImage(c, 0, off, c.width, h, 0, 0, c.width, h);
+        doc.addImage(part.toDataURL("image/jpeg", 0.82), "JPEG", M, y, PW, h * mmPerPx);
+        y += h * mmPerPx + 2; off += h;
+        if (off < c.height) { doc.addPage(); y = M; }
+      }
+    }
+    const name = (document.title || "入院紀錄") + ".pdf";
+    pdfFile = new File([doc.output("blob")], name, { type: "application/pdf" });
+  } finally {
+    root.classList.remove("pdf-mode"); document.title = "入院紀錄檢查表";
+    const fi = $("ftPdfImg"); if (fi) fi.remove(); $("ftSvg").style.display = "";
+  }
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [pdfFile] }));
+  if (canShare) sheet("PDF 已完成。按「分享／儲存 PDF」，再選「儲存到檔案」或傳給別人。", true);
+  else {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(pdfFile); a.download = pdfFile.name; document.body.appendChild(a); a.click(); a.remove();
+    sheet("PDF 已下載。", false);
+  }
+}
+$("pdfShare").addEventListener("click", async () => {
+  if (!pdfFile) return;
+  try { await navigator.share({ files: [pdfFile], title: pdfFile.name }); $("pdfSheet").hidden = true; }
+  catch (e) { if (e && e.name !== "AbortError") sheet("無法開啟分享選單：" + (e.message || e.name), true); }
+});
+$("pdfClose").addEventListener("click", () => { $("pdfSheet").hidden = true; });
+$("pdfBtn").addEventListener("click", async () => {
   const embedded = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
   if (embedded) {
     const m = $("pdfMsg");
-    m.textContent = "這個預覽視窗無法開啟列印。請改用下載的 HTML 檔，在瀏覽器開啟後再按「輸出 PDF」。";
+    m.textContent = "這個預覽視窗無法輸出 PDF。請改用網址 chenkuiz105.github.io/admission-checklist 或下載的 HTML 檔。";
     m.hidden = false; return;
+  }
+  if (isStandalone()) {
+    try { await buildPDF(); } catch (e) { sheet("PDF 製作失敗（" + (e.message || e) + "）。請改用 Safari 開啟網址後按「輸出 PDF」。", false); }
+    return;
   }
   preparePrint();
   window.print();
