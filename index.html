@@ -1,0 +1,765 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body><title>入院紀錄檢查表</title>
+<style>
+/* Layout: one column of section cards under a sticky section nav; checklists wrap into grids; PE panels appear per selected exam. */
+:root {
+  --bg: #f3f5f4;
+  --fg: #1c2b2c;
+  --accent: #2d6e69;
+  --accent-ink: #ffffff;
+  --muted: #5f7171;
+  --line: #d3dcdb;
+  --card: #ffffff;
+  --mark: #e6efee;
+  --affected: #2d6e69;
+  --warn: #b0543a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101817; --fg: #e2ebe9; --accent: #7ec3ba; --accent-ink: #0d1514;
+    --muted: #94a7a5; --line: #2a3a39; --card: #162120; --mark: #1d2c2b;
+    --affected: #7ec3ba; --warn: #e39a7f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101817; --fg: #e2ebe9; --accent: #7ec3ba; --accent-ink: #0d1514;
+  --muted: #94a7a5; --line: #2a3a39; --card: #162120; --mark: #1d2c2b;
+  --affected: #7ec3ba; --warn: #e39a7f;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+}
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 0 48px; padding-inline: 16px; }
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 12px 8px; border-bottom: 1px solid var(--line);
+}
+h1 { font-size: 1.3rem; margin: 0; text-wrap: balance; }
+h1 small { font-size: .82rem; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.nav { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; scrollbar-width: thin; }
+.nav a {
+  flex: none; font-size: .8rem; color: var(--fg); text-decoration: none;
+  border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; background: var(--card);
+}
+.nav a:hover { border-color: var(--accent); color: var(--accent); }
+button {
+  font: inherit; font-size: .85rem; background: none; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer;
+}
+button:hover { background: var(--mark); }
+button.solid { background: var(--accent); color: var(--accent-ink); }
+button.danger { color: var(--warn); border-color: var(--warn); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible, .chip:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 18px; margin-top: 16px; scroll-margin-top: 110px;
+}
+.card h2 { font-size: 1.05rem; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.en { color: var(--muted); font-weight: 400; font-size: .86rem; }
+.tag { font-size: .75rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 6px; align-self: center; }
+.group + .group { margin-top: 14px; }
+.group h3 { font-size: .92rem; margin: 0 0 6px; color: var(--accent); display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 16px; }
+.item { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; cursor: pointer; min-width: 0; }
+.item input[type="checkbox"], .step input[type="checkbox"] {
+  margin-top: 4px; width: 16px; height: 16px; flex: none; accent-color: var(--accent);
+}
+.item .txt { min-width: 0; }
+.item .e { display: block; font-size: .92rem; }
+.item .z { display: block; font-size: .82rem; color: var(--muted); }
+.item:has(input:checked) .e { color: var(--accent); font-weight: 700; }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 16px; }
+.field { display: block; min-width: 0; }
+.lbl { display: block; font-size: .85rem; margin-bottom: 4px; }
+.lbl i { color: var(--muted); font-style: normal; font-size: .8rem; }
+input[type="text"], textarea, select {
+  width: 100%; box-sizing: border-box; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font: inherit; font-size: .9rem; min-width: 0;
+}
+textarea { resize: vertical; }
+.note { font-size: .82rem; color: var(--muted); margin: 0 0 8px; }
+.sub-h { font-size: .92rem; font-weight: 700; margin: 18px 0 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.vitals input { font-variant-numeric: tabular-nums; }
+
+/* repeatable rows */
+.rows { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr) auto; gap: 8px; align-items: center; }
+.row button { padding: 4px 8px; }
+.rowhead { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr) auto; gap: 8px; font-size: .78rem; color: var(--muted); }
+.rowhead span:last-child { width: 34px; }
+
+/* family tree */
+.ft-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; color: var(--fg); padding: 4px 10px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.ft-bar .lab { font-size: .82rem; color: var(--muted); }
+.ft-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+#ftSvg { display: block; margin: 0 auto; }
+#ftSvg .sym { fill: var(--card); stroke: var(--fg); stroke-width: 1.6; }
+#ftSvg .sym.aff { fill: var(--affected); }
+#ftSvg .node { cursor: pointer; }
+#ftSvg .node:hover .sym { stroke: var(--accent); stroke-width: 2.4; }
+#ftSvg .node.sel .sym { stroke: var(--accent); stroke-width: 3; }
+#ftSvg .ln { stroke: var(--fg); stroke-width: 1.4; fill: none; }
+#ftSvg .slash { stroke: var(--fg); stroke-width: 1.6; }
+#ftSvg .rel { fill: var(--fg); font-size: 12px; font-weight: 700; }
+#ftSvg .age { fill: var(--muted); font-size: 11px; }
+#ftSvg .dx { fill: var(--warn); font-size: 11px; }
+#ftSvg .arrow { stroke: var(--accent); stroke-width: 2; fill: none; }
+#ftSvg .arrowhead { fill: var(--accent); }
+#ftSvg .pt-lab { fill: var(--accent); font-size: 11px; font-weight: 700; }
+.ft-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .78rem; color: var(--muted); margin-top: 8px; }
+.ft-edit { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+.ft-edit h4 { margin: 0 0 10px; font-size: .95rem; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: .8rem; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+  background: var(--card); color: var(--fg); cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.dxlist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dxlist span { font-size: .8rem; background: var(--mark); border-radius: 4px; padding: 2px 4px 2px 8px; display: inline-flex; gap: 4px; align-items: center; }
+.dxlist button { border: 0; padding: 0 4px; color: var(--muted); font-size: .9rem; line-height: 1; }
+.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.inline input[type="text"] { flex: 1 1 160px; width: auto; }
+.ft-summary { margin-top: 12px; font-size: .86rem; }
+.ft-summary table { border-collapse: collapse; width: 100%; }
+.ft-summary td, .ft-summary th { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
+.ft-summary th { color: var(--muted); font-weight: 400; font-size: .78rem; }
+
+/* PE selector and panels */
+.pe-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.pe-pick .chip { font-size: .85rem; padding: 6px 12px; text-align: left; line-height: 1.3; }
+.pe-pick .chip small { display: block; font-size: .7rem; opacity: .8; }
+.pe-panel { border: 1px solid var(--line); border-radius: 10px; margin-top: 14px; overflow: hidden; }
+.pe-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; align-items: center; padding: 10px 14px; background: var(--mark); }
+.pe-head h3 { margin: 0; font-size: 1rem; }
+.pe-head .prog { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pe-body { padding: 4px 14px 14px; }
+details.steps > summary { cursor: pointer; font-weight: 700; font-size: .92rem; padding: 10px 0 6px; }
+.pe-text { font-size: .9rem; }
+.pe-text p { margin: 4px 0; overflow-wrap: anywhere; }
+.step { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 4px; cursor: pointer; font-weight: 600; }
+.step:has(input:checked) span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--accent); }
+.gallery { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.gallery img { border-radius: 6px; border: 1px solid var(--line); background: #fff; height: auto; cursor: zoom-in; max-width: 100%; }
+.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.82); display: flex; align-items: center; justify-content: center; padding: 16px; cursor: zoom-out; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; background: #fff; }
+.signs { margin-top: 10px; }
+.empty-pe { font-size: .86rem; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; padding: 14px; margin-top: 14px; }
+
+.reset-wrap { margin-top: 24px; text-align: right; }
+
+.titlebar { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
+.pdf-msg { margin: 6px 0 0; font-size: .82rem; color: var(--warn); }
+.print-val { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  :root { --bg: #fff; --card: #fff; --fg: #111; --muted: #555; --line: #bbb; --mark: #eee; --accent: #1f5c57; --affected: #444; --warn: #8a3b26; }
+  body { background: #fff; font-size: 11pt; }
+  .wrap { max-width: none; padding: 0; }
+  header.top { position: static; border: 0; padding: 0 0 6px; }
+  .nav, #pdfBtn, .pdf-msg, .ft-bar, .ft-edit, .ft-legend, .pe-pick, .reset-wrap, .rowhead span:last-child, .row button, [data-addrow], .sub-h:has(+ .pe-pick) { display: none !important; }
+  .card { border: 0; border-top: 1.5px solid #888; border-radius: 0; padding: 10px 0 4px; margin-top: 8px; break-inside: auto; }
+  .card h2 { break-after: avoid; }
+  input[type="text"], textarea { display: none !important; }
+  .print-val { display: block; min-height: 1.4em; border-bottom: 1px solid #ccc; padding: 2px 4px; white-space: pre-wrap; font-size: 10.5pt; }
+  .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
+  .item, .step { break-inside: avoid; }
+  .item:not(:has(input:checked)) .z { color: #777; }
+  .ft-scroll { border: 0; overflow: visible; }
+  #ftSvg { max-width: 100%; height: auto; }
+  .pe-panel { border: 1px solid #bbb; break-inside: auto; }
+  .gallery img { max-width: 45%; break-inside: avoid; }
+  .lightbox { display: none !important; }
+}
+@media (max-width: 520px) {
+  .row, .rowhead { grid-template-columns: minmax(0, 1fr) auto; }
+  .row input:first-child { grid-column: 1 / -1; }
+  .rowhead span:nth-child(2) { display: none; }
+}
+/* touch devices: bigger targets, 16px inputs so iOS does not zoom on focus */
+@media (pointer: coarse), (max-width: 760px) {
+  input[type="text"], textarea, select { font-size: 16px; padding: 9px 10px; }
+  .item { padding: 9px 0; gap: 10px; }
+  .item input[type="checkbox"], .step input[type="checkbox"] { width: 22px; height: 22px; margin-top: 1px; }
+  .step { gap: 10px; }
+  button { padding: 8px 14px; font-size: .92rem; }
+  .chip { padding: 7px 12px; font-size: .86rem; }
+  .pe-pick .chip { padding: 9px 12px; }
+  .seg button { padding: 8px 14px; }
+  .nav a { padding: 6px 12px; font-size: .85rem; }
+  .dxlist button { padding: 2px 8px; }
+}
+@media (max-width: 600px) {
+  .wrap { padding-inline: 12px; }
+  h1 { font-size: 1.12rem; }
+  h1 small { display: none; }
+  header.top { padding-block: 8px 6px; }
+  .card { padding: 14px; margin-top: 12px; scroll-margin-top: 96px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+  .fields { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pe-body { padding: 4px 10px 12px; }
+  .pe-text { font-size: .88rem; }
+  .pe-text p { padding-left: .8em !important; }
+  .ft-edit { padding: 12px; }
+}
+#nojs { background: #fff4e5; color: #6b3b12; border: 1px solid #e9b98a; border-radius: 10px; padding: 12px 14px; margin-top: 12px; font-size: .9rem; line-height: 1.55; }
+#nojs b { display: block; margin-bottom: 4px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap"><header class="top">
+    <div class="titlebar"><h1>入院紀錄檢查表<small>Admission Progress Note Checklist</small></h1><button type="button" class="solid" id="pdfBtn">輸出 PDF</button></div>
+    <p class="pdf-msg" id="pdfMsg" hidden=""></p>
+    <nav class="nav" aria-label="段落">
+      <a href="#s-id">病人資料</a><a href="#s-cc">主訴</a><a href="#s-pi">現病史</a><a href="#s-pmh">過去病史</a><a href="#s-fh">家族史</a>
+      <a href="#s-psh">個人社會史</a><a href="#s-ros">ROS</a><a href="#s-pe">身體檢查</a><a href="#s-a">診斷</a><a href="#s-p">處置計畫</a>
+    </nav>
+  </header>
+  <div id="nojs"><b>這個檢視器沒有執行互動功能</b>LINE、Messenger 或 iPhone「檔案」的預覽畫面不會執行網頁程式，所以無法勾選、畫家族樹。請改用瀏覽器開啟：Android 選「以 Chrome 開啟」；iPhone／iPad 請開啟同學分享的網址，或用電腦開啟此檔案。</div>
+
+  
+
+  <section class="card" id="s-id">
+    <h2>病人資料 <span class="en">Patient Information</span></h2>
+    <div class="fields">
+      <label class="field"><span class="lbl"><b>姓名</b> <i>Name</i></span><input type="text" id="pt_name"></label>
+      <label class="field"><span class="lbl"><b>病歷號</b> <i>Chart No.</i></span><input type="text" id="pt_chart"></label>
+      <label class="field"><span class="lbl"><b>病房號</b> <i>Ward / Bed</i></span><input type="text" id="pt_ward"></label>
+    </div>
+  </section>
+
+  <section class="card" id="s-cc">
+    <h2>1. 主訴 <span class="en">Chief Complaint</span></h2>
+    <textarea id="cc" rows="2" aria-label="主訴"></textarea>
+  </section>
+
+  <section class="card" id="s-pi">
+    <h2>2. 現病史 <span class="en">Present Illness</span></h2>
+    <p class="note">依 OLDCARTS 逐項記錄 (Record each element of the OLDCARTS mnemonic).</p>
+    <div class="fields" id="pi-fields"><label class="field"><span class="lbl"><b>L 位置</b> <i>Location</i></span><input type="text" id="pi0"></label><label class="field"><span class="lbl"><b>Q 性質</b> <i>Quality</i></span><input type="text" id="pi1"></label><label class="field"><span class="lbl"><b>Q 量／頻率</b> <i>Quantity / Frequency</i></span><input type="text" id="pi2"></label><label class="field"><span class="lbl"><b>O 開始</b> <i>Onset</i></span><input type="text" id="pi3"></label><label class="field"><span class="lbl"><b>P 誘發</b> <i>Provoking</i></span><input type="text" id="pi4"></label><label class="field"><span class="lbl"><b>E 加劇</b> <i>Exacerbating</i></span><input type="text" id="pi5"></label><label class="field"><span class="lbl"><b>R 減緩</b> <i>Relieving</i></span><input type="text" id="pi6"></label><label class="field"><span class="lbl"><b>A 伴隨</b> <i>Associated symptoms</i></span><input type="text" id="pi7"></label><label class="field"><span class="lbl"><b>發作時間</b> <i>Timing</i></span><input type="text" id="pi8"></label><label class="field"><span class="lbl"><b>相關治療</b> <i>Treatment</i></span><input type="text" id="pi9"></label><label class="field"><span class="lbl"><b>演變</b> <i>Course</i></span><input type="text" id="pi10"></label></div>
+  </section>
+
+  <section class="card" id="s-pmh">
+    <h2>3. 過去病史 <span class="en">Past Medical History</span></h2>
+    <div class="group">
+      <h3>內科 <span class="en">Internal medicine</span></h3>
+      <div class="grid" id="pmh-med"><label class="item"><input type="checkbox" id="pmh_med0"><span class="txt"><span class="e">HTN</span><span class="z">高血壓</span></span></label><label class="item"><input type="checkbox" id="pmh_med1"><span class="txt"><span class="e">DM</span><span class="z">糖尿病</span></span></label><label class="item"><input type="checkbox" id="pmh_med2"><span class="txt"><span class="e">MI</span><span class="z">心肌梗塞</span></span></label><label class="item"><input type="checkbox" id="pmh_med3"><span class="txt"><span class="e">Stroke</span><span class="z">中風</span></span></label><label class="item"><input type="checkbox" id="pmh_med4"><span class="txt"><span class="e">PUD</span><span class="z">消化性潰瘍</span></span></label><label class="item"><input type="checkbox" id="pmh_med5"><span class="txt"><span class="e">Asthma</span><span class="z">氣喘</span></span></label><label class="item"><input type="checkbox" id="pmh_med6"><span class="txt"><span class="e">Liver disease</span><span class="z">肝臟疾病</span></span></label><label class="item"><input type="checkbox" id="pmh_med7"><span class="txt"><span class="e">Kidney disease</span><span class="z">腎臟疾病</span></span></label><label class="item"><input type="checkbox" id="pmh_med8"><span class="txt"><span class="e">Recent health check-up</span><span class="z">近期健康檢查</span></span></label></div>
+    </div>
+
+    <div class="sub-h">外科開刀史 <span class="en">Operation</span></div>
+    <div class="rowhead"><span>時間 When</span><span>術式／原因 Operation</span><span></span></div>
+    <div class="rows" id="rows-op"><div class="row">
+    <input type="text" data-row="op" data-i="0" data-k="0" value="" placeholder="2024/05" aria-label="時間">
+    <input type="text" data-row="op" data-i="0" data-k="1" value="" placeholder="例：Appendectomy（急性闌尾炎）" aria-label="內容">
+    <button type="button" data-delrow="op" data-i="0" aria-label="刪除此列">✕</button></div></div>
+    <div style="margin-top:8px"><button type="button" data-addrow="op">＋ 新增開刀紀錄</button></div>
+    <div class="grid" style="margin-top:8px"><label class="item"><input type="checkbox" id="pmh_transfusion"><span class="txt"><span class="e">Blood transfusion</span><span class="z">輸血</span></span></label></div>
+
+    <div class="sub-h">住院史 <span class="en">Hospitalization</span></div>
+    <div class="rowhead"><span>時間 When</span><span>原因 Reason</span><span></span></div>
+    <div class="rows" id="rows-hosp"><div class="row">
+    <input type="text" data-row="hosp" data-i="0" data-k="0" value="" placeholder="2023/11" aria-label="時間">
+    <input type="text" data-row="hosp" data-i="0" data-k="1" value="" placeholder="例：Pneumonia 住院 7 天" aria-label="內容">
+    <button type="button" data-delrow="hosp" data-i="0" aria-label="刪除此列">✕</button></div></div>
+    <div style="margin-top:8px"><button type="button" data-addrow="hosp">＋ 新增住院紀錄</button></div>
+
+    <div class="sub-h">過敏史 <span class="en">Allergy</span></div>
+    <div class="fields">
+      <label class="field"><span class="lbl"><b>食物過敏</b> <i>Food allergy</i></span><input type="text" id="allergy_food" placeholder="例：海鮮（蕁麻疹）"></label>
+      <label class="field"><span class="lbl"><b>藥物過敏</b> <i>Drug allergy</i></span><input type="text" id="allergy_drug" placeholder="例：Penicillin（皮疹）"></label>
+    </div>
+
+    <div class="sub-h">目前用藥 <span class="en">Current Medication (Caution)</span></div>
+    <textarea id="med" rows="2" aria-label="目前用藥"></textarea>
+  </section>
+
+  <section class="card" id="s-fh">
+    <h2>4. 家族史 <span class="en">Family History</span></h2>
+    <div class="ft-bar">
+      <span class="lab">病人性別</span>
+      <span class="seg" id="ftSex"><button type="button" data-v="M" aria-pressed="true">男</button><button type="button" data-v="F" aria-pressed="false">女</button></span>
+      <span class="lab">婚姻</span>
+      <span class="seg" id="ftMar"><button type="button" data-v="single" aria-pressed="false">未婚</button><button type="button" data-v="married" aria-pressed="true">已婚</button><button type="button" data-v="divorced" aria-pressed="false">離婚</button></span>
+    </div>
+    <div class="ft-bar">
+      <button type="button" data-add="sib-M">＋ 兄弟</button>
+      <button type="button" data-add="sib-F">＋ 姊妹</button>
+      <button type="button" data-add="ch-M">＋ 兒子</button>
+      <button type="button" data-add="ch-F">＋ 女兒</button>
+    </div>
+    <div class="ft-scroll"><svg id="ftSvg" role="img" aria-label="家族樹" viewBox="0 0 488 470" width="488" height="470" style="width: max(100%, 303px); max-width: 488px; height: auto;"><path class="ln" d="M93 40L171 40"></path><path class="ln" d="M132 40L132 147"></path><path class="ln" d="M132 147L132 147"></path><path class="ln" d="M132 147L132 173"></path><path class="ln" d="M317 40L395 40"></path><path class="ln" d="M356 40L356 147"></path><path class="ln" d="M356 147L356 147"></path><path class="ln" d="M356 147L356 173"></path><path class="ln" d="M149 190L339 190"></path><path class="ln" d="M244 190L244 297"></path><path class="ln" d="M244 297L244 297"></path><path class="ln" d="M244 297L244 323"></path><path class="ln" d="M261 340L339 340"></path><g class="node sel" data-node="pt" tabindex="0" role="button" aria-label="病人"><rect class="sym" x="227" y="323" width="34" height="34"></rect><text class="rel" x="244" y="373" text-anchor="middle">病人</text><path class="arrow" d="M201 371L221 353"></path><path class="arrowhead" d="M224 350l-9 2l5 5z"></path><text class="pt-lab" x="197" y="383" text-anchor="middle">P</text></g><g class="node" data-node="sp" tabindex="0" role="button" aria-label="配偶"><circle class="sym" cx="356" cy="340" r="17"></circle><text class="rel" x="356" y="373" text-anchor="middle">配偶</text></g><g class="node" data-node="fa" tabindex="0" role="button" aria-label="父親"><rect class="sym" x="115" y="173" width="34" height="34"></rect><text class="rel" x="132" y="223" text-anchor="middle">父親</text></g><g class="node" data-node="mo" tabindex="0" role="button" aria-label="母親"><circle class="sym" cx="356" cy="190" r="17"></circle><text class="rel" x="356" y="223" text-anchor="middle">母親</text></g><g class="node" data-node="pgf" tabindex="0" role="button" aria-label="爺爺"><rect class="sym" x="59" y="23" width="34" height="34"></rect><text class="rel" x="76" y="73" text-anchor="middle">爺爺</text></g><g class="node" data-node="pgm" tabindex="0" role="button" aria-label="奶奶"><circle class="sym" cx="188" cy="40" r="17"></circle><text class="rel" x="188" y="73" text-anchor="middle">奶奶</text></g><g class="node" data-node="mgf" tabindex="0" role="button" aria-label="外公"><rect class="sym" x="283" y="23" width="34" height="34"></rect><text class="rel" x="300" y="73" text-anchor="middle">外公</text></g><g class="node" data-node="mgm" tabindex="0" role="button" aria-label="外婆"><circle class="sym" cx="412" cy="40" r="17"></circle><text class="rel" x="412" y="73" text-anchor="middle">外婆</text></g></svg></div>
+    <div class="ft-legend">
+      <span>□ 男　○ 女</span><span>實心＝有病史</span><span>斜線＝已歿</span><span>// ＝離婚</span><span>點選任一成員以編輯病史</span>
+    </div>
+    <div class="ft-edit" id="ftEdit">
+    <h4><span>編輯：病人</span></h4>
+    <div class="fields">
+      <label class="field"><span class="lbl"><b>稱謂</b> <i>Relation</i></span><input type="text" id="ftRel" data-nosave="" value="病人"></label>
+      <label class="field"><span class="lbl"><b>年齡／死因</b> <i>Age / Cause of death</i></span><input type="text" id="ftAge" data-nosave="" value="" placeholder="例：72y 或 d. 80y MI"></label>
+    </div>
+    <div class="inline" style="margin-top:10px">
+      
+      
+    </div>
+    <div class="lbl" style="margin-top:12px"><b>病史</b> <i>點選常見疾病，或輸入其他疾病後按「加入」</i></div>
+    <div class="chips"><button type="button" class="chip" data-dx="HTN" aria-pressed="false">HTN 高血壓</button><button type="button" class="chip" data-dx="DM" aria-pressed="false">DM 糖尿病</button><button type="button" class="chip" data-dx="Hyperlipidemia" aria-pressed="false">Hyperlipidemia 高血脂</button><button type="button" class="chip" data-dx="CAD" aria-pressed="false">CAD 冠心病</button><button type="button" class="chip" data-dx="Stroke" aria-pressed="false">Stroke 中風</button><button type="button" class="chip" data-dx="Cancer" aria-pressed="false">Cancer 癌症</button><button type="button" class="chip" data-dx="CKD" aria-pressed="false">CKD 慢性腎病</button><button type="button" class="chip" data-dx="Asthma" aria-pressed="false">Asthma 氣喘</button><button type="button" class="chip" data-dx="COPD" aria-pressed="false">COPD 慢阻肺</button><button type="button" class="chip" data-dx="Liver disease" aria-pressed="false">Liver disease 肝病</button><button type="button" class="chip" data-dx="Thyroid disease" aria-pressed="false">Thyroid disease 甲狀腺疾病</button><button type="button" class="chip" data-dx="Gout" aria-pressed="false">Gout 痛風</button></div>
+    <div class="inline" style="margin-top:8px"><input type="text" id="ftDxIn" data-nosave="" placeholder="例：Breast cancer、Parkinsonism"><button type="button" id="ftDxAdd">加入</button></div>
+    <div class="dxlist"></div></div>
+    <div class="ft-summary" id="ftSummary"><p class="note">尚未標記任何家族病史。點選家族樹中的成員即可加入。</p></div>
+    <div class="sub-h">其他家族成員或備註 <span class="en">Others</span></div>
+    <textarea id="fh_note" rows="2" aria-label="家族史備註" placeholder="例：叔叔 Colon cancer、阿姨 SLE"></textarea>
+  </section>
+
+  <section class="card" id="s-psh">
+    <h2>5. 個人與社會史 <span class="en">Personal and Social History</span></h2>
+    <div class="grid" id="psh-habits"><label class="item"><input type="checkbox" id="psh_alcohol"><span class="txt"><span class="e">Alcohol drinking</span><span class="z">飲酒</span></span></label><label class="item"><input type="checkbox" id="psh_smoking"><span class="txt"><span class="e">Smoking</span><span class="z">吸菸</span></span></label><label class="item"><input type="checkbox" id="psh_betel"><span class="txt"><span class="e">Betel nuts</span><span class="z">檳榔</span></span></label></div>
+    <div class="fields" id="psh-fields" style="margin-top:12px"><label class="field"><span class="lbl"><b>宗教</b> <i>Religion</i></span><input type="text" id="psh_religion"></label><label class="field"><span class="lbl"><b>旅遊</b> <i>Travel</i></span><input type="text" id="psh_travel"></label><label class="field"><span class="lbl"><b>職業</b> <i>Occupation</i></span><input type="text" id="psh_occupation"></label><label class="field"><span class="lbl"><b>接觸史</b> <i>Contact history</i></span><input type="text" id="psh_contact"></label><label class="field"><span class="lbl"><b>群聚史</b> <i>Cluster history</i></span><input type="text" id="psh_cluster"></label></div>
+  </section>
+
+  <section class="card" id="s-ros">
+    <h2>6. 系統性回顧 <span class="en">Review of Systems</span> <span class="tag">陽性 Positive</span></h2>
+    <p class="note">勾選有症狀者 (Check symptoms that are present).</p>
+    <div id="ros-groups"><div class="group"><h3>全身狀況 <span class="en">General conditions</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_gen_0"><span class="txt"><span class="e">Fever</span><span class="z">發燒</span></span></label><label class="item"><input type="checkbox" id="ros_gen_1"><span class="txt"><span class="e">Chills</span><span class="z">寒顫</span></span></label><label class="item"><input type="checkbox" id="ros_gen_2"><span class="txt"><span class="e">Change of appetite</span><span class="z">食慾改變</span></span></label><label class="item"><input type="checkbox" id="ros_gen_3"><span class="txt"><span class="e">Fatigue</span><span class="z">疲倦</span></span></label><label class="item"><input type="checkbox" id="ros_gen_4"><span class="txt"><span class="e">Body weight loss</span><span class="z">體重減輕</span></span></label></div></div><div class="group"><h3>頭、眼、耳、鼻、喉 <span class="en">Head, Eye, Ear, Nose, Throat</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_hent_0"><span class="txt"><span class="e">Headache</span><span class="z">頭痛</span></span></label><label class="item"><input type="checkbox" id="ros_hent_1"><span class="txt"><span class="e">Dizziness</span><span class="z">頭暈</span></span></label><label class="item"><input type="checkbox" id="ros_hent_2"><span class="txt"><span class="e">Blurred vision</span><span class="z">視力模糊</span></span></label><label class="item"><input type="checkbox" id="ros_hent_3"><span class="txt"><span class="e">Tinnitus</span><span class="z">耳鳴</span></span></label><label class="item"><input type="checkbox" id="ros_hent_4"><span class="txt"><span class="e">Nasal bleeding</span><span class="z">鼻出血</span></span></label><label class="item"><input type="checkbox" id="ros_hent_5"><span class="txt"><span class="e">Nasal discharge</span><span class="z">流鼻涕</span></span></label><label class="item"><input type="checkbox" id="ros_hent_6"><span class="txt"><span class="e">Gum bleeding</span><span class="z">牙齦出血</span></span></label><label class="item"><input type="checkbox" id="ros_hent_7"><span class="txt"><span class="e">Oral ulcer</span><span class="z">口腔潰瘍</span></span></label><label class="item"><input type="checkbox" id="ros_hent_8"><span class="txt"><span class="e">Throat ache</span><span class="z">喉嚨痛</span></span></label></div></div><div class="group"><h3>呼吸系統 <span class="en">Respiratory</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_resp_0"><span class="txt"><span class="e">Cough</span><span class="z">咳嗽</span></span></label><label class="item"><input type="checkbox" id="ros_resp_1"><span class="txt"><span class="e">Sputum</span><span class="z">痰</span></span></label><label class="item"><input type="checkbox" id="ros_resp_2"><span class="txt"><span class="e">Hemoptysis</span><span class="z">咳血</span></span></label><label class="item"><input type="checkbox" id="ros_resp_3"><span class="txt"><span class="e">Dyspnea</span><span class="z">呼吸困難</span></span></label><label class="item"><input type="checkbox" id="ros_resp_4"><span class="txt"><span class="e">Chest tightness</span><span class="z">胸悶</span></span></label><label class="item"><input type="checkbox" id="ros_resp_5"><span class="txt"><span class="e">Chest pain</span><span class="z">胸痛</span></span></label></div></div><div class="group"><h3>心血管系統 <span class="en">Cardiovascular</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_cv_0"><span class="txt"><span class="e">Palpitation</span><span class="z">心悸</span></span></label><label class="item"><input type="checkbox" id="ros_cv_1"><span class="txt"><span class="e">Arrhythmia</span><span class="z">心律不整</span></span></label><label class="item"><input type="checkbox" id="ros_cv_2"><span class="txt"><span class="e">Orthopnea</span><span class="z">端坐呼吸</span></span></label><label class="item"><input type="checkbox" id="ros_cv_3"><span class="txt"><span class="e">Paroxysmal nocturnal dyspnea</span><span class="z">夜間陣發性呼吸困難</span></span></label><label class="item"><input type="checkbox" id="ros_cv_4"><span class="txt"><span class="e">Dyspnea on exertion</span><span class="z">運動時呼吸困難</span></span></label></div></div><div class="group"><h3>腸胃系統 <span class="en">Gastrointestinal</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_gi_0"><span class="txt"><span class="e">Nausea</span><span class="z">噁心</span></span></label><label class="item"><input type="checkbox" id="ros_gi_1"><span class="txt"><span class="e">Vomiting</span><span class="z">嘔吐</span></span></label><label class="item"><input type="checkbox" id="ros_gi_2"><span class="txt"><span class="e">Dysphagia</span><span class="z">吞嚥困難</span></span></label><label class="item"><input type="checkbox" id="ros_gi_3"><span class="txt"><span class="e">Heartburn</span><span class="z">胃灼熱</span></span></label><label class="item"><input type="checkbox" id="ros_gi_4"><span class="txt"><span class="e">Flatulence</span><span class="z">脹氣</span></span></label><label class="item"><input type="checkbox" id="ros_gi_5"><span class="txt"><span class="e">Abdominal pain</span><span class="z">腹痛</span></span></label><label class="item"><input type="checkbox" id="ros_gi_6"><span class="txt"><span class="e">Diarrhea</span><span class="z">腹瀉</span></span></label><label class="item"><input type="checkbox" id="ros_gi_7"><span class="txt"><span class="e">Constipation</span><span class="z">便秘</span></span></label><label class="item"><input type="checkbox" id="ros_gi_8"><span class="txt"><span class="e">Stool shape &amp; color change</span><span class="z">大便形狀或顏色改變</span></span></label><label class="item"><input type="checkbox" id="ros_gi_9"><span class="txt"><span class="e">Melena</span><span class="z">黑便</span></span></label><label class="item"><input type="checkbox" id="ros_gi_10"><span class="txt"><span class="e">Hematochezia</span><span class="z">血便</span></span></label></div></div><div class="group"><h3>泌尿道 <span class="en">Urinary tract</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_uro_0"><span class="txt"><span class="e">Frequency</span><span class="z">尿頻</span></span></label><label class="item"><input type="checkbox" id="ros_uro_1"><span class="txt"><span class="e">Urgency</span><span class="z">尿急</span></span></label><label class="item"><input type="checkbox" id="ros_uro_2"><span class="txt"><span class="e">Proteinuria</span><span class="z">蛋白尿</span></span></label><label class="item"><input type="checkbox" id="ros_uro_3"><span class="txt"><span class="e">Dysuria</span><span class="z">排尿疼痛</span></span></label><label class="item"><input type="checkbox" id="ros_uro_4"><span class="txt"><span class="e">Oliguria</span><span class="z">少尿</span></span></label><label class="item"><input type="checkbox" id="ros_uro_5"><span class="txt"><span class="e">Hematuria</span><span class="z">血尿</span></span></label><label class="item"><input type="checkbox" id="ros_uro_6"><span class="txt"><span class="e">Nocturia</span><span class="z">夜尿</span></span></label><label class="item"><input type="checkbox" id="ros_uro_7"><span class="txt"><span class="e">Incontinence</span><span class="z">尿失禁</span></span></label></div></div><div class="group"><h3>生殖系統 <span class="en">Genital</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_gen2_0"><span class="txt"><span class="e">STD (sexually transmitted disease) history</span><span class="z">性傳染病病史</span></span></label><label class="item"><input type="checkbox" id="ros_gen2_1"><span class="txt"><span class="e">Testicular pain</span><span class="z">睪丸疼痛</span></span></label><label class="item"><input type="checkbox" id="ros_gen2_2"><span class="txt"><span class="e">Masses</span><span class="z">腫塊</span></span></label><label class="item"><input type="checkbox" id="ros_gen2_3"><span class="txt"><span class="e">Hernias</span><span class="z">疝氣</span></span></label></div></div><div class="group"><h3>四肢 <span class="en">EXT</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_ext_0"><span class="txt"><span class="e">Muscle atrophy</span><span class="z">肌肉萎縮</span></span></label><label class="item"><input type="checkbox" id="ros_ext_1"><span class="txt"><span class="e">Involuntary movement</span><span class="z">不自主運動</span></span></label><label class="item"><input type="checkbox" id="ros_ext_2"><span class="txt"><span class="e">Joint swelling</span><span class="z">關節腫脹</span></span></label><label class="item"><input type="checkbox" id="ros_ext_3"><span class="txt"><span class="e">Arthralgia</span><span class="z">關節痛</span></span></label></div></div><div class="group"><h3>皮膚 <span class="en">Skin</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_skin_0"><span class="txt"><span class="e">Pruritus</span><span class="z">搔癢</span></span></label><label class="item"><input type="checkbox" id="ros_skin_1"><span class="txt"><span class="e">Rash</span><span class="z">皮疹</span></span></label><label class="item"><input type="checkbox" id="ros_skin_2"><span class="txt"><span class="e">Macule</span><span class="z">斑疹</span></span></label><label class="item"><input type="checkbox" id="ros_skin_3"><span class="txt"><span class="e">Ulcer</span><span class="z">潰瘍</span></span></label><label class="item"><input type="checkbox" id="ros_skin_4"><span class="txt"><span class="e">Petechiae</span><span class="z">點狀出血</span></span></label><label class="item"><input type="checkbox" id="ros_skin_5"><span class="txt"><span class="e">Ecchymosis</span><span class="z">瘀斑</span></span></label></div></div><div class="group"><h3>精神狀態 <span class="en">Mental status</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_mental_0"><span class="txt"><span class="e">Anxiety</span><span class="z">焦慮</span></span></label><label class="item"><input type="checkbox" id="ros_mental_1"><span class="txt"><span class="e">Depression</span><span class="z">憂鬱</span></span></label><label class="item"><input type="checkbox" id="ros_mental_2"><span class="txt"><span class="e">Memory loss</span><span class="z">記憶力減退</span></span></label></div></div><div class="group"><h3>神經精神 <span class="en">Neuropsychiatric</span></h3>
+  <div class="grid"><label class="item"><input type="checkbox" id="ros_neuro_0"><span class="txt"><span class="e">Numbness</span><span class="z">麻木</span></span></label><label class="item"><input type="checkbox" id="ros_neuro_1"><span class="txt"><span class="e">Syncope</span><span class="z">暈厥</span></span></label><label class="item"><input type="checkbox" id="ros_neuro_2"><span class="txt"><span class="e">Paralysis</span><span class="z">癱瘓</span></span></label><label class="item"><input type="checkbox" id="ros_neuro_3"><span class="txt"><span class="e">Seizure</span><span class="z">癲癇</span></span></label></div></div></div>
+  </section>
+
+  <section class="card" id="s-pe">
+    <h2>7. 身體檢查與特殊發現 <span class="en">Physical Examinations &amp; Special Finding</span></h2>
+    <div class="fields vitals" id="vitals"><label class="field"><span class="lbl"><b>體溫</b> <i>BT (°C)</i></span><input type="text" id="v_bt" inputmode="decimal"></label><label class="field"><span class="lbl"><b>血壓</b> <i>BP (mmHg)</i></span><input type="text" id="v_bp" inputmode="decimal"></label><label class="field"><span class="lbl"><b>心跳</b> <i>PR (次/分)</i></span><input type="text" id="v_pr" inputmode="decimal"></label><label class="field"><span class="lbl"><b>呼吸</b> <i>RR (次/分)</i></span><input type="text" id="v_rr" inputmode="decimal"></label><label class="field"><span class="lbl"><b>體重</b> <i>BW (Kg)</i></span><input type="text" id="v_bw" inputmode="decimal"></label><label class="field"><span class="lbl"><b>身高</b> <i>Ht (Cm)</i></span><input type="text" id="v_ht" inputmode="decimal"></label></div>
+    <div class="fields" style="margin-top:12px" id="pe-general"><label class="field"><span class="lbl"><b>一般外觀</b> <i>General appearance</i></span><input type="text" id="pe_ga"></label><label class="field"><span class="lbl"><b>意識</b> <i>Conscious</i></span><input type="text" id="pe_conscious"></label><label class="field"><span class="lbl"><b>心智狀態</b> <i>Mentality</i></span><input type="text" id="pe_mentality"></label></div>
+    <div class="sub-h">選擇要做的身體檢查 <span class="en">Select examinations (multiple)</span></div>
+    <div class="pe-pick" id="pePick"><button type="button" class="chip" data-pe="resp" aria-pressed="false">呼吸系統<small>Respiratory system</small></button><button type="button" class="chip" data-pe="cv" aria-pressed="false">心血管系統<small>Cardiovascular system</small></button><button type="button" class="chip" data-pe="abd" aria-pressed="false">腹部<small>Abdomen</small></button><button type="button" class="chip" data-pe="neuro1" aria-pressed="false">神經系統：顱神經與小腦<small>Neurological: Cranial nerves &amp; Cerebellum</small></button><button type="button" class="chip" data-pe="neuro2" aria-pressed="false">神經系統：上下肢<small>Neurological: Upper &amp; Lower limbs</small></button><button type="button" class="chip" data-pe="eye" aria-pressed="false">眼睛<small>Eye (Fundoscopy)</small></button><button type="button" class="chip" data-pe="ear" aria-pressed="false">耳朵<small>Ear</small></button><button type="button" class="chip" data-pe="throat" aria-pressed="false">咽喉<small>Oral cavity &amp; Pharynx</small></button><button type="button" class="chip" data-pe="neck" aria-pressed="false">頸部及甲狀腺<small>Neck &amp; Thyroid</small></button><button type="button" class="chip" data-pe="lymph" aria-pressed="false">淋巴結<small>Lymph nodes</small></button><button type="button" class="chip" data-pe="breast" aria-pressed="false">乳房<small>Breast</small></button><button type="button" class="chip" data-pe="inguinal" aria-pressed="false">腹股溝與男性生殖系統<small>Inguinal &amp; Male genitalia</small></button><button type="button" class="chip" data-pe="dre" aria-pressed="false">直腸指診<small>Digital rectal examination</small></button><button type="button" class="chip" data-pe="ns" aria-pressed="false">神外 OSCE：頸椎神經根<small>Neurosurgery OSCE: Cervical radiculopathy</small></button></div>
+    <div id="pePanels"><div class="empty-pe">選擇上方一個或多個檢查項目，這裡會出現對應的檢查步驟、圖示與 sign checklist。</div></div>
+  </section>
+
+  <section class="card" id="s-a">
+    <h2>8. 初步診斷 <span class="tag">A</span> <span class="en">Impression</span></h2>
+    <textarea id="impression" rows="3" aria-label="初步診斷"></textarea>
+  </section>
+
+  <section class="card" id="s-p">
+    <h2>9. 處置計畫 <span class="tag">P</span> <span class="en">Plan</span></h2>
+    <div class="fields" style="grid-template-columns:1fr">
+      <label class="field"><span class="lbl"><b>診斷性</b> <i>Diagnostic</i></span><textarea id="plan_dx" rows="3"></textarea></label>
+      <label class="field"><span class="lbl"><b>治療性</b> <i>Therapeutic</i></span><textarea id="plan_tx" rows="3"></textarea></label>
+      <label class="field"><span class="lbl"><b>衛教</b> <i>Educational</i></span><textarea id="plan_edu" rows="3"></textarea></label>
+    </div>
+  </section>
+
+  <div class="reset-wrap"><button type="button" class="danger" id="reset">清除所有內容</button></div>
+</div>
+
+<script>
+(function(){ var n = document.getElementById("nojs"); if (n) n.remove(); })();
+const PE = [{"id": "resp", "zh": "呼吸系統", "en": "Respiratory system", "signs": [{"g": ["視診", "Inspection"], "items": [["Tachypnea / abnormal breathing pattern", "呼吸過速／呼吸模式異常"], ["Rib or chest wall deformity", "肋骨或胸壁變形"], ["Asymmetric chest expansion", "胸廓擴張不對稱"], ["Cyanosis", "發紺"]]}, {"g": ["觸診與扣診", "Palpation & Percussion"], "items": [["Chest wall tenderness", "胸壁壓痛"], ["Increased tactile fremitus", "觸覺震顫增加"], ["Decreased tactile fremitus", "觸覺震顫減少"], ["Dullness", "扣診濁音"], ["Hyperresonance", "扣診過度反響"]]}, {"g": ["聽診", "Auscultation"], "items": [["Coarse crackles", "粗爆裂音"], ["Fine crackles", "細爆裂音"], ["Wheeze", "喘鳴"], ["Rhonchi", "乾囉音"], ["Pleural friction rub", "肋膜摩擦音"], ["Stridor", "哮鳴"], ["Decreased or absent breath sounds", "呼吸音減少或消失"]]}], "blocks": [{"t": "p", "text": "1. 檢查前先洗手、自我介紹", "lvl": 0, "step": true}, {"t": "p", "text": "2. 「先生請你把上衣脫下來，背對我坐著」", "lvl": 0, "step": true}, {"t": "p", "text": "3. (視診:檢視呼吸模式、呼吸頻率、有無肋骨變形、胸壁兩側動作是否對稱、是否有發紺現象。)(沒在影片裡 但check list上有)", "lvl": 0, "step": true}, {"t": "p", "text": "4. 「先生，現在幫你做觸診喔」、「會有痛的感覺嗎?」(用雙掌掌面同時輕推患者胸廓，由上而下)(1~4)", "lvl": 0, "step": true}, {"t": "p", "text": "5. 「先生，現在請你做深呼吸的動作；好，吐氣」x2(雙手壓在12肋下緣腰際處)(5)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p000.jpg", "w": 316, "h": 285, "dw": 144}, {"t": "p", "text": "6. 「先生現在請你幫我發出E的音」(雙掌尺側同時接觸患者肺部輪廓)(下圖1~4)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p001.jpg", "w": 313, "h": 279, "dw": 142}, {"t": "p", "text": "7. 「接下來幫你做扣診」(依\"弓\"字型沿肩胛骨、肋骨由上而下做扣診)(下圖1~10)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p002.jpg", "w": 333, "h": 267, "dw": 152}, {"t": "p", "text": "8. 「接下來幫你做聽診」(聽診位置與扣診位置相同)", "lvl": 0, "step": true}, {"t": "p", "text": "9. (請患者平躺，進行觸診)「先生這樣會不舒服嗎?會有痛的感覺嗎?」(雙掌掌面同時輕推患者胸廓，由上而下)(下圖1~4)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p003.jpg", "w": 318, "h": 284, "dw": 145}, {"t": "p", "text": "10.「先生現在請你幫我發出E的音」(雙掌尺側同時接觸患者肺部輪廓)(上圖1~4)", "lvl": 0, "step": true}, {"t": "p", "text": "11.「先生接下來幫你做扣診」(依\"弓\"字型由上而下沿肺輪廓做扣診)(下圖1~10)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p004.jpg", "w": 407, "h": 330, "dw": 185}, {"t": "p", "text": "12.「先生接下來請你用嘴巴呼吸喔」(依\"弓\"字型由上而下沿肺輪廓做聽診)(上圖1~10)", "lvl": 0, "step": true}, {"t": "p", "text": "13.check list上的其他東西:", "lvl": 0, "step": true}, {"t": "p", "text": "不正常呼吸音:", "lvl": 1, "step": false}, {"t": "p", "text": "● Adventitial sounds (“extra” sounds)", "lvl": 1, "step": false}, {"t": "p", "text": "1. Discontinuous sounds: 爆裂音", "lvl": 1, "step": false}, {"t": "p", "text": "■ Coarse crackles:", "lvl": 1, "step": false}, {"t": "p", "text": "Rapid airflow takes place through large central airways causing rupture of fluid films and bubbles along the walls of those airways(as occurs in acute and chronic bronchitis)", "lvl": 1, "step": false}, {"t": "p", "text": "■ Fine crackles:", "lvl": 1, "step": false}, {"t": "p", "text": "1. Occur when partially collapsed small airways suddenly reopen in inspiration,producing a “popping” sound", "lvl": 1, "step": false}, {"t": "p", "text": "2. Scarring (pulmonary fibrosis), pus, blood, or serum (e.g.,pneumonia, alveolar hemorrhage, or pulmonary edema) maycollapse those small airways", "lvl": 1, "step": false}, {"t": "p", "text": "2. Continuous:", "lvl": 1, "step": false}, {"t": "p", "text": "■ Wheeze: 喘鳴", "lvl": 1, "step": false}, {"t": "p", "text": "為胸腔內氣道狹窄所產生之高頻,且具音樂性之連續音,大多在吐氣期出現,可依出現的時間分為四期。", "lvl": 1, "step": false}, {"t": "p", "text": "第一期 吐氣末出現", "lvl": 1, "step": false}, {"t": "p", "text": "第二期 整個吐氣期都可聽到", "lvl": 1, "step": false}, {"t": "p", "text": "第三期 吸氣吐氣皆可聽到", "lvl": 1, "step": false}, {"t": "p", "text": "第四期 氣道嚴重阻塞至聽不到呼吸音", "lvl": 1, "step": false}, {"t": "p", "text": "■ Rhonchus: 乾囉音", "lvl": 1, "step": false}, {"t": "p", "text": "另外有人將較低頻的喘鳴音,稱做乾囉音(Rhonchi)其音質類似打鼾聲,若深呼吸或咳嗽使喘鳴消失,則表示此聲音是由分泌物所引起。(咳嗽清痰可改善)", "lvl": 1, "step": false}, {"t": "p", "text": "■ Pleural rubs: 肋膜摩擦音", "lvl": 1, "step": false}, {"t": "p", "text": "1.正常的肋膜在呼吸時是沒有聲音,但是在肋膜發炎或增厚的情形下,可以聽到肋膜磨擦音", "lvl": 1, "step": false}, {"t": "p", "text": "2.它是刺耳不連續的,類似皮革磨擦嘰嘰嘎嘎的聲音,可以在吸氣末期及吐氣初期聽到。", "lvl": 1, "step": false}, {"t": "p", "text": "3.肋膜磨擦音有時聽起來和爆裂音很像,磨擦音較刺耳,通常只局限在較小區域,且呼氣與吸氣都會發生,但偶爾只局限在吸氣期。", "lvl": 1, "step": false}, {"t": "p", "text": "■ Stridor: 哮鳴", "lvl": 1, "step": false}, {"t": "p", "text": "為上端氣管或咽喉等大呼吸道阻塞,所產生的吸氣期的連續的音樂性聲音,聲音特徵為類似貓頭鷹之啼叫聲,可在聲帶痲痺、會厭炎、上呼吸道阻塞等病人聽到哮鳴。", "lvl": 1, "step": false}, {"t": "p", "text": "● Decreased or absent breath sounds: 減少或消失的呼吸音", "lvl": 1, "step": false}, {"t": "p", "text": "在大量肋膜滲液,氣胸,肺氣腫的病患呼吸聲音減少或消失,可藉由 X 光片及扣診做鑑別診斷。", "lvl": 1, "step": false}, {"t": "p", "text": "1. Pleural effusion", "lvl": 1, "step": false}, {"t": "p", "text": "2. Pleural thickening", "lvl": 1, "step": false}, {"t": "p", "text": "3. Emphysema", "lvl": 1, "step": false}, {"t": "p", "text": "4. Severe asthma", "lvl": 1, "step": false}, {"t": "p", "text": "5. Pneumothorax", "lvl": 1, "step": false}, {"t": "p", "text": "6. Complete occlusion of large airways", "lvl": 1, "step": false}, {"t": "img", "src": "img/p005.jpg", "w": 900, "h": 504, "dw": 452}, {"t": "img", "src": "img/p006.jpg", "w": 900, "h": 632, "dw": 452}, {"t": "img", "src": "img/p007.jpg", "w": 900, "h": 423, "dw": 452}, {"t": "img", "src": "img/p008.jpg", "w": 900, "h": 966, "dw": 452}]}, {"id": "cv", "zh": "心血管系統", "en": "Cardiovascular system", "signs": [{"g": ["頸部", "Neck"], "items": [["Jugular venous distension", "頸靜脈怒張"], ["Hepatojugular reflux positive", "肝頸靜脈迴流陽性"], ["Carotid bruit", "頸動脈雜音"]]}, {"g": ["胸部與心臟", "Chest & Heart"], "items": [["Asymmetric chest", "胸廓不對稱"], ["Displaced PMI", "心尖最大搏動點位移"], ["Heave", "抬舉性搏動"], ["Thrill", "震顫"], ["Heart murmur", "心雜音"], ["Lung crackles", "肺部爆裂音"]]}, {"g": ["腹部", "Abdomen"], "items": [["Pulsatile abdominal mass", "腹部搏動性腫塊"], ["Abdominal aortic bruit", "腹主動脈雜音"], ["Renal artery bruit", "腎動脈雜音"]]}, {"g": ["四肢", "Extremities"], "items": [["Clubbing finger", "杵狀指"], ["Peripheral cyanosis", "周邊發紺"], ["Diminished or absent peripheral pulse", "周邊脈搏減弱或消失"], ["Pitting edema", "凹陷性水腫"]]}], "blocks": [{"t": "p", "text": "1. 先跟病人自我介紹一下我是誰，然後要做甚麼", "lvl": 0, "step": true}, {"t": "p", "text": "「先生你好，我是林醫師，等一下幫你做心血管理學檢查，檢查順序為頸部、心臟、胸部跟腹部以及四肢血壓的量測，並採取視診、觸診、聽診的順序，再請您配合一下。」", "lvl": 1, "step": false}, {"t": "p", "text": "2. 注意病人隱私，異性要請護理人員陪同", "lvl": 0, "step": true}, {"t": "p", "text": "動作：拉簾子", "lvl": 1, "step": false}, {"t": "p", "text": "3. 洗手戴手套", "lvl": 0, "step": true}, {"t": "p", "text": "「首先檢查前先做洗手」", "lvl": 1, "step": false}, {"t": "p", "text": "4. 頸部檢查：視診(看頸靜/動脈搏動點)、觸診(摸頸靜/動脈搏動點)、聽診(聽頸靜/動脈搏動點)", "lvl": 0, "step": true}, {"t": "p", "text": "「先生，我們準備幫您做頸部檢查，首先請您把頭往左側看。首先要看頸靜脈搏動點與頸動脈搏動點。然後看另外一側(將病人頭轉向另一側)，頸靜脈搏動點在這裡、頸動脈搏動點在這裡」", "lvl": 1, "step": false}, {"t": "p", "text": "*唸搏動點時要指出位置，頸靜脈靠下方、頸動脈靠上方", "lvl": 1, "step": false}, {"t": "p", "text": "頸靜脈", "lvl": 1, "step": false}, {"t": "p", "text": "頸動脈", "lvl": 4, "step": false}, {"t": "img", "src": "img/p009.jpg", "w": 300, "h": 192, "dw": 136}, {"t": "img", "src": "img/p010.jpg", "w": 318, "h": 193, "dw": 145}, {"t": "p", "text": "5. 肝頸反射：又稱肝頸靜脈迴流征，是指當右心衰引起肝淤血腫大時，用手壓迫肝使頸靜脈怒張更明顯，稱為肝頸靜脈迴流征陽性。", "lvl": 0, "step": true}, {"t": "p", "text": "「再來要做肝頸反射的檢查，手壓肝臟看頸靜脈搏動點、放開肝臟看頸靜脈搏動點」", "lvl": 1, "step": false}, {"t": "img", "src": "img/p011.jpg", "w": 268, "h": 181, "dw": 122}, {"t": "img", "src": "img/p012.jpg", "w": 283, "h": 186, "dw": 129}, {"t": "p", "text": "壓住肝臟，然後放開", "lvl": 4, "step": false}, {"t": "p", "text": "6. 「先生，接下來我們要幫你做胸部跟心臟的檢查，首先請把衣服往上拉。首先看兩側胸廓有無對稱；接著看心搏最大搏動點是否位在第五肋間鎖骨中線位置；再來用掌根去感受病人有無Heave的情況；再來用指腹感受病人在主動脈瓣區、肺動脈瓣區、三尖瓣、二尖瓣有無Thrill」", "lvl": 0, "step": true}, {"t": "p", "text": "*掌根觸診示意圖", "lvl": 1, "step": false}, {"t": "img", "src": "img/p013.jpg", "w": 389, "h": 209, "dw": 177}, {"t": "p", "text": "*Thrill", "lvl": 1, "step": false}, {"t": "p", "text": "主動脈瓣區", "lvl": 1, "step": false}, {"t": "p", "text": "肺動脈瓣區", "lvl": 4, "step": false}, {"t": "p", "text": "三尖瓣區", "lvl": 4, "step": false}, {"t": "p", "text": "二尖瓣區", "lvl": 4, "step": false}, {"t": "img", "src": "img/p014.jpg", "w": 193, "h": 91, "dw": 88}, {"t": "img", "src": "img/p015.jpg", "w": 196, "h": 114, "dw": 89}, {"t": "img", "src": "img/p016.jpg", "w": 242, "h": 113, "dw": 110}, {"t": "img", "src": "img/p017.jpg", "w": 250, "h": 109, "dw": 114}, {"t": "img", "src": "img/p018.jpg", "w": 370, "h": 384, "dw": 191}, {"t": "img", "src": "img/p019.jpg", "w": 404, "h": 426, "dw": 184}, {"t": "img", "src": "img/p020.jpg", "w": 900, "h": 429, "dw": 452}, {"t": "p", "text": "7. 「再來採取聽診(記得先用手溫熱聽診器)，一樣依序聽主動脈瓣區、肺動脈瓣區、三尖瓣、二尖瓣」", "lvl": 0, "step": true}, {"t": "p", "text": "8. 「再來進行肺部聽診，請患者吸氣吐氣(聽右上胸)、吸氣吐氣(聽左上胸)、吸氣吐氣(聽右下側胸)、吸氣吐氣(聽左下側胸)」", "lvl": 0, "step": true}, {"t": "p", "text": "*記得要以弓字型，以便做對稱位置的聲音對比", "lvl": 1, "step": false}, {"t": "img", "src": "img/p021.jpg", "w": 204, "h": 127, "dw": 93}, {"t": "img", "src": "img/p022.jpg", "w": 212, "h": 127, "dw": 97}, {"t": "img", "src": "img/p023.jpg", "w": 229, "h": 128, "dw": 104}, {"t": "img", "src": "img/p024.jpg", "w": 201, "h": 127, "dw": 92}, {"t": "p", "text": "9. 「先生請您坐起來，這次要聽背部，再一次吸氣吐氣(一樣以弓字型聽，重複四次)」", "lvl": 0, "step": true}, {"t": "p", "text": "10.「先生請您躺下，接下來要幫您做腹主動脈的檢查」", "lvl": 0, "step": true}, {"t": "p", "text": "*觸診：用手在肚臍上方壓三次，第一次在肚臍正上方、第二次靠左、第三次靠右", "lvl": 1, "step": false}, {"t": "img", "src": "img/p025.jpg", "w": 238, "h": 132, "dw": 114}, {"t": "img", "src": "img/p026.jpg", "w": 232, "h": 140, "dw": 106}, {"t": "img", "src": "img/p027.jpg", "w": 224, "h": 140, "dw": 102}, {"t": "p", "text": "11.「接下來幫您聽一下腹主動脈有無雜音，會稍微用力請忍耐一下，在肚臍上五公分處、向左平移五公分處聽左側腎動脈有無雜音、向右聽右側腎動脈有無雜音」", "lvl": 0, "step": true}, {"t": "p", "text": "12.「那我們檢查一下手指跟腳趾的部分(把手腳都拿起來看一下)，接下來幫您看一下有無杵狀指，請跟我做這個動作」", "lvl": 0, "step": true}, {"t": "p", "text": "*杵狀指動作", "lvl": 1, "step": false}, {"t": "img", "src": "img/p028.jpg", "w": 292, "h": 201, "dw": 133}, {"t": "p", "text": "13.「再來要檢查四肢脈搏狀況，首先檢查肱動脈、橈動脈，換手，肱動脈、橈動脈，再來要檢查下肢，首先檢查股動脈、對側股動脈，膝蓋往上彎一點，膕動脈、對側膕動脈，後脛動脈、對側後脛動脈，足背動脈、對側足背動脈」", "lvl": 0, "step": true}, {"t": "p", "text": "肱動脈", "lvl": 1, "step": false}, {"t": "img", "src": "img/p029.jpg", "w": 328, "h": 192, "dw": 149}, {"t": "p", "text": "膕動脈", "lvl": 4, "step": false}, {"t": "img", "src": "img/p030.jpg", "w": 303, "h": 202, "dw": 138}, {"t": "p", "text": "橈動脈", "lvl": 1, "step": false}, {"t": "img", "src": "img/p031.jpg", "w": 298, "h": 194, "dw": 136}, {"t": "p", "text": "後脛動脈", "lvl": 4, "step": false}, {"t": "img", "src": "img/p032.jpg", "w": 293, "h": 192, "dw": 134}, {"t": "p", "text": "股動脈", "lvl": 1, "step": false}, {"t": "img", "src": "img/p033.jpg", "w": 328, "h": 166, "dw": 149}, {"t": "p", "text": "足背動脈", "lvl": 4, "step": false}, {"t": "img", "src": "img/p034.jpg", "w": 288, "h": 175, "dw": 131}, {"t": "p", "text": "14.「再來看您下肢有無水腫情況，將您褲管上拉，首先看足踝部按壓有無凹陷水腫、對側足踝部、脛前區有無凹陷水腫、對側脛前區 (摸完把褲管拉回)」", "lvl": 0, "step": true}, {"t": "img", "src": "img/p035.jpg", "w": 226, "h": 218, "dw": 103}, {"t": "img", "src": "img/p036.jpg", "w": 282, "h": 222, "dw": 128}, {"t": "img", "src": "img/p037.jpg", "w": 900, "h": 858, "dw": 452}]}, {"id": "abd", "zh": "腹部", "en": "Abdomen", "signs": [{"g": ["視診", "Inspection"], "items": [["Distension", "腹脹"], ["Asymmetry", "不對稱"], ["Surgical scar", "手術疤痕"], ["Dilated veins", "靜脈怒張"], ["Hernia", "疝氣"]]}, {"g": ["聽診", "Auscultation"], "items": [["Hyperactive bowel sounds", "腸音亢進"], ["Hypoactive or absent bowel sounds", "腸音減弱或消失"], ["Metallic sound", "金屬音"], ["Vascular bruit", "血管雜音"], ["Succussion splash", "振水音"]]}, {"g": ["扣診與觸診", "Percussion & Palpation"], "items": [["Hepatomegaly", "肝腫大"], ["Splenomegaly", "脾腫大"], ["Shifting dullness", "移動性濁音"], ["Tenderness", "壓痛"], ["Rebound tenderness", "反彈痛"], ["Murphy's sign", "莫菲氏徵象"]]}], "blocks": [{"t": "p", "text": "(很多東西都照唸講義內容，不確定是否為口報詞，「」為口報詞，()為動作)", "lvl": 0, "step": false}, {"t": "p", "text": "1. 病史詢問：", "lvl": 0, "step": true}, {"t": "p", "text": "「與病情相關的症狀和病史」", "lvl": 1, "step": false}, {"t": "p", "text": "「過去和個人病史，含職業史和開刀紀錄」", "lvl": 1, "step": false}, {"t": "p", "text": "「藥物史，含藥物過敏史」", "lvl": 1, "step": false}, {"t": "p", "text": "「家族史」", "lvl": 1, "step": false}, {"t": "p", "text": "2. 理學檢查前準備", "lvl": 0, "step": true}, {"t": "p", "text": "「與病患溝通檢查之目的及過程，並解釋說明要開始做腹部身體檢查。」", "lvl": 1, "step": false}, {"t": "p", "text": "「注重病人隱私，異性病患需有異性醫療人員陪同。」", "lvl": 1, "step": false}, {"t": "p", "text": "「讓病患平躺，屈髖關節及雙膝，兩手平放在腹側，露出腹部。」(口報詞+動作)", "lvl": 1, "step": false}, {"t": "p", "text": "「身體檢查順序：視→聽→扣及觸診。」", "lvl": 1, "step": false}, {"t": "p", "text": "3. 視診：", "lvl": 0, "step": true}, {"t": "p", "text": "「評估外型 (評估對稱性、平坦、凹陷、突出)、有無」", "lvl": 1, "step": false}, {"t": "p", "text": "「評估有無手術疤痕、靜脈怒張、疝氣。」", "lvl": 1, "step": false}, {"t": "p", "text": "4. 聽診：", "lvl": 0, "step": true}, {"t": "p", "text": "「把聽診器弄暖。」(口報詞+動作)", "lvl": 1, "step": false}, {"t": "p", "text": "「聽腸蠕動音、血管音、振水音 (succussion splash)、金屬音(metalic sound)。」(以肚臍為原點，分別聽診四個象限)", "lvl": 1, "step": false}, {"t": "p", "text": "(聽診肚臍上方，雙手拇指按壓聽診器，其餘四指固定、搖晃病人腹部)", "lvl": 1, "step": false}, {"t": "img", "src": "img/p119.jpg", "w": 575, "h": 359, "dw": 262}, {"t": "p", "text": "5. 扣診：", "lvl": 0, "step": true}, {"t": "p", "text": "「評估肝&脾大小以及評估有無腹水的現象(shifting dullness)」", "lvl": 1, "step": false}, {"t": "p", "text": "(由右側肋中線肝臟處逐漸往下扣診，接著沿左肋下緣逐漸往下扣診，接著分別扣診肚臍周圍四個象限)", "lvl": 1, "step": false}, {"t": "p", "text": "(一手固定腰際，另一手指尖按壓摸出左側脾輪廓及右側肝輪廓)", "lvl": 1, "step": false}, {"t": "img", "src": "img/p120.jpg", "w": 589, "h": 330, "dw": 268}, {"t": "p", "text": "「評估有無腹水的現象(shifting dullness)」", "lvl": 1, "step": false}, {"t": "p", "text": "(使患者側躺，由近床側往上扣診到遠離床側(2次)，確認液面高度)", "lvl": 1, "step": false}, {"t": "img", "src": "img/p121.jpg", "w": 635, "h": 381, "dw": 289}, {"t": "p", "text": "6. 觸診：", "lvl": 0, "step": true}, {"t": "p", "text": "「最痛的地方最後觸摸。先輕觸診，後深觸診。」", "lvl": 1, "step": false}, {"t": "p", "text": "「確認肝脾腫大。」", "lvl": 1, "step": false}, {"t": "p", "text": "「評估有無腹部內疼痛（tenderness），評估位置(RUQ)及嚴重度。」", "lvl": 1, "step": false}, {"t": "p", "text": "「評估是否有rebound tenderness及Murphy’s sign。」", "lvl": 1, "step": false}, {"t": "p", "text": "(詢問患者哪個地方最痛)", "lvl": 1, "step": false}, {"t": "p", "text": "(分別按壓四個象限(會痛的那個象限最後按壓))", "lvl": 1, "step": false}, {"t": "p", "text": "(每次按壓都詢問患者會不會痛)", "lvl": 1, "step": false}, {"t": "p", "text": "(先用指腹輕按壓，後用指尖深按壓最痛的象限)", "lvl": 1, "step": false}, {"t": "img", "src": "img/p122.jpg", "w": 521, "h": 299, "dw": 237}, {"t": "p", "text": "(輕觸診)", "lvl": 4, "step": false}, {"t": "img", "src": "img/p123.jpg", "w": 521, "h": 317, "dw": 237}, {"t": "p", "text": "(深觸診，詢問會不會更痛)", "lvl": 4, "step": false}, {"t": "p", "text": "(突然抽離，詢問患者是否會更痛)", "lvl": 1, "step": false}, {"t": "p", "text": "(Murphy’s sign:)「請患者吐氣，深按壓(肝臟處)，再請患者吸氣，觀察有無疼痛或呼吸中止的現象」(口報詞+動作)", "lvl": 1, "step": false}, {"t": "img", "src": "img/p124.jpg", "w": 900, "h": 1140, "dw": 452}, {"t": "img", "src": "img/p125.jpg", "w": 900, "h": 615, "dw": 452}, {"t": "img", "src": "img/p126.jpg", "w": 900, "h": 572, "dw": 452}]}, {"id": "neuro1", "zh": "神經系統：顱神經與小腦", "en": "Neurological: Cranial nerves & Cerebellum", "signs": [{"g": ["顱神經", "Cranial nerves"], "items": [["Anosmia (CN I)", "嗅覺喪失"], ["Decreased visual acuity (CN II)", "視力下降"], ["Color vision defect", "顏色辨識異常"], ["Abnormal pupillary light reflex", "瞳孔光反射異常"], ["Visual field defect", "視野缺損"], ["Papilledema", "視乳突水腫"], ["Optic atrophy", "視神經萎縮"], ["Diplopia (CN III / IV / VI)", "複視"], ["Facial sensory loss (CN V)", "臉部感覺異常"], ["Masseter / temporalis weakness", "咀嚼肌無力"], ["Absent corneal reflex", "角膜反射消失"], ["Central facial palsy (CN VII)", "中樞型顏面麻痺"], ["Peripheral facial palsy (CN VII)", "周邊型顏面麻痺"], ["Rinne negative (BC > AC)", "林內試驗陰性"], ["Weber lateralization", "韋伯試驗偏側"], ["Absent gag reflex (CN IX / X)", "嘔吐反射消失"], ["Uvula deviation", "懸雍垂偏移"], ["SCM / trapezius weakness (CN XI)", "胸鎖乳突肌／斜方肌無力"], ["Tongue fasciculation", "舌肌束震顫"], ["Tongue deviation (CN XII)", "舌頭偏移"]]}, {"g": ["小腦", "Cerebellum"], "items": [["Scanning speech", "斷續言語"], ["Nystagmus", "眼球震顫"], ["Intention tremor", "意向性顫抖"], ["Dysmetria", "辨距不良"], ["Dysdiadochokinesia", "輪替動作障礙"], ["Rebound phenomenon", "反彈現象"], ["Abnormal gait", "步態異常"], ["Unable to tandem gait", "無法直線行走"], ["Truncal ataxia", "軀幹性共濟失調"], ["Romberg sign positive", "Romberg 徵象陽性"], ["Hypotonia (pendular knee jerk)", "肌張力低下"], ["Abnormal heel-to-shin test", "跟膝脛試驗異常"]]}], "blocks": [{"t": "p", "text": "一、顱神經檢查", "lvl": 0, "step": false}, {"t": "p", "text": "1. 備物：咖啡包或茶包、棉球、牙籤、筆燈、眼底鏡、音叉、叩診鎚、視力表、棉籤", "lvl": 0, "step": true}, {"t": "p", "text": "2. 檢查前一定要先洗手(沒有說要不要內外夾弓大立腕？)", "lvl": 0, "step": true}, {"t": "p", "text": "3. 確認病人身份、向病人自我介紹及說明今天要做顱神經檢查", "lvl": 0, "step": true}, {"t": "p", "text": "4. 嗅神經檢查：請病人閉上眼睛，一隻手壓住一側鼻孔，將咖啡包或茶包拿靠近病人另一側鼻孔，問病人有沒有聞到什麼東西？另一側鼻孔重複動作", "lvl": 0, "step": true}, {"t": "p", "text": "5. 視神經檢查：視力、顏色辨識、瞳孔反應(？)、視野、眼底觀察", "lvl": 0, "step": true}, {"t": "p", "text": "a. 視力：拿視力表在距離病人6公尺遠的地方，測病人校正後(戴眼鏡)的視力", "lvl": 2, "step": false}, {"t": "p", "text": "* 影片並無檢測的過程，但應該跟大家以前在眼科量視力的方法差不多；也不確定考試時是不是真的要站到6公尺那麼遠", "lvl": 3, "step": false}, {"t": "p", "text": "b. 顏色辨識：視力表背面有一個紅色的圓形(問這是什麼顏色？)及一個綠色的方形(問這是什麼顏色？)", "lvl": 2, "step": false}, {"t": "p", "text": "c. 瞳孔反應：一隻手置於病人鼻樑前方隔開左右眼，拿筆燈照射病人一側瞳孔(筆燈從外側移進來)，同時觀察兩眼瞳孔的變化(照2、3次)；另一側瞳孔重複動作", "lvl": 2, "step": false}, {"t": "img", "src": "img/p038.jpg", "w": 374, "h": 249, "dw": 170}, {"t": "p", "text": "d. 視野：請病人遮住一隻眼睛，另一隻眼睛盯著檢查者的鼻子(要求病人眼球不要亂動)，檢查者伸出兩隻食指，兩隻手距離為檢查者剛好也可以同時看到兩隻手的距離，動其中一隻或兩隻食指，問病人哪隻手在動？左右、上下、斜位(左上右下、右上左下)都要測；另一隻眼睛重複動作", "lvl": 2, "step": false}, {"t": "img", "src": "img/p039.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p040.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p041.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p042.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "* 測上下時上方手指因病人額頭、眉毛擋住所以不要太上面，下方手指可以稍微下面一點", "lvl": 3, "step": false}, {"t": "p", "text": "* 測斜位時病人鼻側手指不要太遠，顳側手指可以遠一點", "lvl": 3, "step": false}, {"t": "p", "text": "e. 眼底觀察：先告知病人檢查時光線會比較刺眼，請病人有心理準備別緊張；請病人盡量不要亂動眼球以免影響檢查；檢查時將室內燈光調暗(關燈)讓瞳孔放大以便觀察；詢問病人近視度數調整眼底鏡(沒教怎麼調==)；先看病人視乳突是否水腫或萎縮，再看視乳突周圍血管是否有出血或滲出", "lvl": 2, "step": false}, {"t": "img", "src": "img/p043.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "* 檢查者用右眼看病人右眼、左眼看病人左眼", "lvl": 3, "step": false}, {"t": "p", "text": "6. 動眼、滑車、外展神經檢查：檢查者伸出食指，告知病人用眼球追蹤檢查者食指的移動，頭不要動；檢查者食指以「米」字形移動，每移動一個方向詢問病人是否有雙影(複視)？", "lvl": 0, "step": true}, {"t": "img", "src": "img/p044.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "* 往內下看有雙影代表滑車神經有問題", "lvl": 3, "step": false}, {"t": "p", "text": "* 往外側看有雙影且眼球無法往外側運動代表外展神經有問題", "lvl": 3, "step": false}, {"t": "p", "text": "* 其他方向有雙影代表動眼神經有問題", "lvl": 3, "step": false}, {"t": "p", "text": "7. 三叉神經檢查：感覺支、運動支(5-3 咀嚼肌群)、中樞核、角膜反射(5進7出)", "lvl": 0, "step": true}, {"t": "p", "text": "a. 運動支：請病人咬緊牙關，觸摸病人兩側咬肌、顳肌，感受緊度及力道", "lvl": 2, "step": false}, {"t": "p", "text": "b. 感覺支：拿棉球捏出一個小尾巴，輕刮病人皮膚(5-1 眉毛上、5-2 臉頰、5-3 嘴角下)，左右側都要刮(對稱位置)，詢問病人兩側感覺是否一樣(或是用牙籤輕刺病人皮膚也可以)", "lvl": 2, "step": false}, {"t": "img", "src": "img/p045.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p046.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "c. 中樞核：臉頰皮膚由內一層層往外刮，詢問病人是否有感覺，最後問每一層感覺是否一樣(臉頰內側皮膚的三叉感覺中樞在腦幹靠上方的位置(pons)；臉頰外側皮膚的三叉感覺中樞在腦幹靠下方的位置(cervical))", "lvl": 2, "step": false}, {"t": "p", "text": "鼻子Pons → 法令紋Medulla → 臉頰C1 → 耳後C2", "lvl": 3, "step": false}, {"t": "img", "src": "img/p047.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p048.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "d. 角膜反射：先告知病人等一下會用棉球輕碰眼角膜，可能會有點不舒服，若無法接受請告知檢查者；請病人眼睛盯著檢查者的鼻子，棉球從外側移進來(不要讓病人看到)，接近眼睛時用棉球尾巴輕碰病人角膜；另一隻眼睛重複動作", "lvl": 2, "step": false}, {"t": "img", "src": "img/p049.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "8. 面神經檢查：中樞型麻痺、周邊型麻痺", "lvl": 0, "step": true}, {"t": "p", "text": "a. 臉上部肌肉：請病人眉毛往上抬，觀察兩側是否都出現抬頭紋；請病人眼睛閉緊，觀察兩側皺紋是否平均，並試著扳開病人的眼睛，測試病人閉眼的力道", "lvl": 2, "step": false}, {"t": "p", "text": "b. 臉下部肌肉：請病人吹氣，但不要讓氣露出來(可以示範給病人看)，接著輕敲病人的臉頰，看鼓起來的力道是否一樣；請病人露齒笑，觀察兩側酒窩/梨窩是否平均、嘴角是否同高(若不同高則健側較高)", "lvl": 2, "step": false}, {"t": "img", "src": "img/p050.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p051.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "c. 中樞型：對側下半臉麻痹", "lvl": 2, "step": false}, {"t": "p", "text": "d. 周邊型：同側半張臉麻痺", "lvl": 2, "step": false}, {"t": "p", "text": "9. 聽神經檢查：傳導性(中耳三小聽骨)異常、神經性異常", "lvl": 0, "step": true}, {"t": "p", "text": "a. 站在病人後方，震動音叉，拿到病人一隻耳朵旁，詢問病人哪一隻耳朵聽到聲音？再把音叉拿到另一隻耳朵旁，詢問病人哪一隻耳朵聽到聲音？最後問病人兩隻耳朵聽到的聲音是否一樣大？", "lvl": 2, "step": false}, {"t": "p", "text": "b. Rinne test：站在病人後方，震動音叉，音叉底靠在病人一側乳突上，詢問病人有沒有聽到聲音？接著把音叉拿到病人耳朵旁，詢問病人有沒有聽到聲音？最後問病人聲音是否一樣大？", "lvl": 2, "step": false}, {"t": "p", "text": "* 老師這邊說的跟FC寫的有點不太一樣，參照網路資料後個人認為FC應該是正確的。先將震動的音叉底靠在病人乳突上，音波可藉由骨傳導傳到耳蝸，等病人告知聽不到聲音後再將音叉拿到病人耳朵旁，此時音波經空氣傳導、三小聽骨放大後可以聽到聲音。正常空氣傳導效果>骨傳導，因此若拿到耳朵旁時仍聽不到聲音，代表骨傳導效果>空氣傳導，即三小聽骨異常；若拿到耳朵旁時聽得到聲音，代表聽力正常或是聽神經異常(骨傳導與空氣傳導同等受影響)", "lvl": 3, "step": false}, {"t": "img", "src": "img/p052.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p053.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "c. Weber test：震動音叉，音叉底靠在病人額頭上，詢問病人兩邊耳朵聽到的聲音是否一樣大？", "lvl": 2, "step": false}, {"t": "img", "src": "img/p054.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "d. (筆者判讀方法，供參)先做Weber test，若右耳大聲，代表右中耳或左聽神經異常；再做Rinne test，若音叉拿到右耳旁時聽不到聲音，代表異常的是右中耳；若音叉拿到左耳旁時聽得到聲音，但比拿到右耳旁時小聲，則異常的是左聽神經", "lvl": 2, "step": false}, {"t": "p", "text": "10.舌咽神經檢查：準備筆燈及棉籤，請病人微抬頭並張嘴，用筆燈照病人嘴巴，棉籤輕碰一下病人軟顎，若收縮代表正常(gag reflex)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p055.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "* 順便觀察懸雍垂有沒有偏移", "lvl": 3, "step": false}, {"t": "p", "text": "11.迷走神經檢查：同上gag reflex (9進10出)；懸雍垂若偏移則偏向健側", "lvl": 0, "step": true}, {"t": "p", "text": "12.副神經檢查：胸鎖乳突肌、斜方肌", "lvl": 0, "step": true}, {"t": "p", "text": "a. 胸鎖乳突肌(正常收縮時頭轉向對側)：檢查者手施力頂住病人對側臉頰，請病人頭轉向對側對抗檢查者的手，感受病人轉頭的力道；另一側重複動作，感受力道是否一樣", "lvl": 2, "step": false}, {"t": "p", "text": "b. 斜方肌(聳肩)：檢查者站在病人後方，雙手施力壓著病人肩膀，請病人聳肩對抗檢查者的手，感受病人聳肩的力道兩側是否一樣", "lvl": 2, "step": false}, {"t": "img", "src": "img/p056.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p057.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "13.舌下神經檢查：先用筆燈觀察病人舌頭表面是否有肌肉震顫(fasciculation)，有的話代表舌下神經麻痺的lower motor neuron sign；接著請病人吐舌頭，觀察舌尖是否在正中間，若有偏移則偏向患側", "lvl": 0, "step": true}, {"t": "p", "text": "14.檢查完最後要謝謝病人的合作以及洗手", "lvl": 0, "step": true}, {"t": "p", "text": "二、小腦檢查", "lvl": 0, "step": false}, {"t": "p", "text": "1. 備物：叩診鎚", "lvl": 0, "step": true}, {"t": "p", "text": "2. 先洗手", "lvl": 0, "step": true}, {"t": "p", "text": "3. 講話功能測試：小腦功能受損的病人講話斷續、不順(scanning speech)", "lvl": 0, "step": true}, {"t": "p", "text": "正常人：「我現在要去醫院看病。」", "lvl": 1, "step": false}, {"t": "p", "text": "病人：「我...我現...現...現在...在...要要...要去...醫...醫...醫...院...看...看病」", "lvl": 1, "step": false}, {"t": "p", "text": "4. 眼球運動測試：測試方式同顱神經之動眼、滑車、外展神經檢查(「米」字形)，觀察是否有眼震；唯注意手指移動幅度勿超過中線30度，因病人會自動產生眼震", "lvl": 0, "step": true}, {"t": "p", "text": "* 若病人出現眼震，則小腦病變側為眼震快相側", "lvl": 1, "step": false}, {"t": "p", "text": "5. Finger to nose test：可以先教病人如何測試。測試者伸出食指，請病人先用手指觸摸自己的鼻尖，再用同一隻手指觸碰測試者的食指，一定要碰到指尖；病人在測試時測試者的食指不要亂動，且距離要在病人伸手可以碰到的地方；一隻手測2-3次，每一次測試測試者的食指可以在不同位置(中間、右邊、左邊)；病人左右手都要測", "lvl": 0, "step": true}, {"t": "img", "src": "img/p058.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p059.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "(1)一開始就很抖：若在準備動作或靜止時就抖，可能是原發性顫抖症 (Essential Tremor) 或巴金森氏症", "lvl": 2, "step": false}, {"t": "p", "text": "(2)意向性顫抖 (Intention Tremor)：越接近鼻尖震顫越劇烈，這反映了對運動精細度控制的喪失，是小腦病變的特徵", "lvl": 2, "step": false}, {"t": "p", "text": "(3)一直指不到 (Dysmetria)：因動作過度 (Over-shooting) 或不足(Under-shooting)導致指不準，顯示小腦對運動幅度估算錯誤，右手dysmetria則lesion為右小腦(同側)", "lvl": 2, "step": false}, {"t": "p", "text": "6. 交替動作測試", "lvl": 0, "step": true}, {"t": "p", "text": "a. 手：請病人伸出兩隻手，手心都朝上，先用右手手掌拍左手手掌，再用右手手背拍左手手掌，再用右手手掌拍左手手掌，再用右手手背拍左手手掌，...，重複交替動作且速度越來越快；病人左右手都要測", "lvl": 2, "step": false}, {"t": "img", "src": "img/p060.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p061.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "* 若病人右小腦病變，則右手的交替動作會不順暢(同側)(dysdiadochokinesia)", "lvl": 3, "step": false}, {"t": "p", "text": "b. 腳：請病人坐著，腳跟固定在地板上，腳掌抬起、著地、抬起、著地、...，速度越來越快；病人左右腳都要測", "lvl": 2, "step": false}, {"t": "img", "src": "img/p062.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p063.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "7. Rebound phenomenon test", "lvl": 0, "step": true}, {"t": "p", "text": "a. 方法一：病人一隻手肘屈曲，測試者一隻手固定病人手肘，另一隻手握住病人的手施力往下壓，請病人施力對抗(如左圖)。接著測試者突然放開手，正常人前臂往回彈時可以煞住。小腦有病變的病人前臂無法煞住會打到自己。若懷疑病人有小腦病變，測試者在做rebound phenomenon test時記得保護病人(如右圖)。病人左右手都要測", "lvl": 2, "step": false}, {"t": "img", "src": "img/p064.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p065.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "b. 方法二：請病人伸出雙手，手心朝上，測試者施力將病人雙手往下壓，請病人施力對抗。接著測試者突然放開手，若病人小腦有病變則病變同側的手會出現大幅度反彈", "lvl": 2, "step": false}, {"t": "img", "src": "img/p066.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "8. 步態測試(測試者須跟在病人後面保護病人)", "lvl": 0, "step": true}, {"t": "p", "text": "a. 觀察病人走路，若病人走路容易往某一側偏移，則同側小腦可能有病變", "lvl": 2, "step": false}, {"t": "p", "text": "b. Tandem gait：請病人走直線(腳跟對腳尖)，觀察病人是否有往某一側偏", "lvl": 2, "step": false}, {"t": "img", "src": "img/p067.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "c. 偏癱步態 (Hemiplegic Gait)", "lvl": 2, "step": false}, {"t": "p", "text": "(a)外觀特徵： 患側上肢屈曲、內收且內旋；下肢伸展、足部與腳趾蹠屈（Plantar flexion）", "lvl": 4, "step": false}, {"t": "p", "text": "(b)走路型態： 患側腿因足垂（Foot drop）與下肢伸肌張力過高，行走時會向外劃一個半圓（劃圈步態 Circumduction）", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： 最常見於中風 (Stroke)。輕微偏癱者可能僅表現出患側擺臂消失或輕微劃圈", "lvl": 4, "step": false}, {"t": "p", "text": "d. 剪刀狀步態 / 雙癱步態 (Diplegic / Spastic Gait)", "lvl": 2, "step": false}, {"t": "p", "text": "(a)外觀特徵： 雙側下肢受累較上肢嚴重。基底距（Base）異常狹窄，走路時拖行雙腿並刮到腳趾", "lvl": 4, "step": false}, {"t": "p", "text": "(b)關鍵表現： 因髖部內收肌群極度緊繃，導致雙腿交錯，稱為剪刀狀步態(Scissors gait)", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： 腦性麻痺 (Cerebral palsy)、雙側室旁病灶", "lvl": 4, "step": false}, {"t": "p", "text": "e. 神經源性步態 (Neuropathic / Steppage / Equine Gait)", "lvl": 2, "step": false}, {"t": "p", "text": "(a)外觀特徵： 因足背屈無力（足垂）導致", "lvl": 4, "step": false}, {"t": "p", "text": "(b)走路型態： 為了不讓腳趾拖地，行走時會刻意將腿抬得很高（跨閾步態）", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因", "lvl": 4, "step": false}, {"t": "p", "text": "單側：腓神經麻痺、L5 神經根病變", "lvl": 4, "step": false}, {"t": "p", "text": "雙側： 漸凍症 (ALS)、CMT 症、糖尿病周邊神經病變", "lvl": 4, "step": false}, {"t": "p", "text": "f.", "lvl": 2, "step": false}, {"t": "p", "text": "肌病變步態 (Myopathic / Waddling Gait)", "lvl": 3, "step": false}, {"t": "p", "text": "(a)外觀特徵： 髖帶肌群（Hip girdle）無力，無法在行走時維持骨盆水平", "lvl": 4, "step": false}, {"t": "p", "text": "(b)走路型態： 單側無力會導致對側骨盆下垂（Trendelenburg sign，臀中肌無力）；雙側無力則導致骨盆左右搖擺，稱為鴨步 (Waddling)", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： 肌肉萎縮症 (Muscular dystrophy) 等肌肉病變", "lvl": 4, "step": false}, {"t": "p", "text": "g. 舞蹈症步態 (Choreiform / Hyperkinetic Gait)", "lvl": 2, "step": false}, {"t": "p", "text": "(a)外觀特徵： 全身肢體出現不規則、猛烈、非自主的抽動或扭動", "lvl": 4, "step": false}, {"t": "p", "text": "(b)走路型態： 行走會加劇原本的非自主運動障礙", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： Huntington's Disease、希登漢氏舞蹈症、基底核疾病", "lvl": 4, "step": false}, {"t": "p", "text": "h. 共濟失調步態 (Ataxic / Cerebellar Gait)", "lvl": 2, "step": false}, {"t": "p", "text": "(a)外觀特徵： 動作笨拙、步履蹣跚，採取寬基底步態以維持平衡", "lvl": 4, "step": false}, {"t": "p", "text": "(b)關鍵表現： 站立時身體會前後左右搖晃（軀幹震顫 Titubation），無法執行直線接龍步行（Heel-to-toe）", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： 小腦疾病（蚓部病變更易導致軀幹不穩）、急性酒精中毒i.", "lvl": 4, "step": false}, {"t": "p", "text": "帕金森氏步態 (Parkinsonian / Festinating Gait)", "lvl": 3, "step": false}, {"t": "p", "text": "(a)外觀特徵： 身體前傾（Stooped）、頸部與膝蓋彎曲、Bradykinesia", "lvl": 4, "step": false}, {"t": "p", "text": "(b)走路型態： 踏出第一步困難，起步後變為細碎小步（Marche a petits pas），並出現非自主性的越走越快（慌張步態 Festination）。擺臂消失", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： 帕金森氏症或藥物引起的帕金森症候群", "lvl": 4, "step": false}, {"t": "p", "text": "j.", "lvl": 2, "step": false}, {"t": "p", "text": "感覺性步態 (Sensory / Stomping Gait)", "lvl": 3, "step": false}, {"t": "p", "text": "(a)外觀特徵： 因本體感覺（Proprioception）喪失，病人不知道腳的位置", "lvl": 4, "step": false}, {"t": "p", "text": "(b)走路型態： 行走時會用力將腳掌拍打地面，以增加感覺回饋。在黑暗中或閉眼時（無法視覺代償）步態會顯著惡化", "lvl": 4, "step": false}, {"t": "p", "text": "(c) 常見病因： Vit B12 缺乏、脊髓癆（梅毒）、糖尿病嚴重周邊神經病變", "lvl": 4, "step": false}, {"t": "p", "text": "9. Trunk ataxia test：觀察病人坐在椅子上是否左右搖晃，若病人小腦蚓狀部(vermis)病變，則病人坐在椅子上會不穩、易跌倒(但finger to nose、heel to shin可能正常)", "lvl": 0, "step": true}, {"t": "p", "text": "10.Romberg test (與小腦有關但主要不是測小腦功能)", "lvl": 0, "step": true}, {"t": "p", "text": "(1)人體保持平衡的三大系統分別為：視覺、本體感覺、前庭覺", "lvl": 2, "step": false}, {"t": "p", "text": "只要有兩個系統正常運作，人體就能保持某種程度的平衡", "lvl": 3, "step": false}, {"t": "p", "text": "*Cerebellar Ataxia：站不穩 Wide-based gait，因為病人連張眼都站不穩，所以Romberg test 在此是不適用的，不能稱為 Romberg positive", "lvl": 3, "step": false}, {"t": "p", "text": "(2)Romberg test就是把視覺關掉，看剩下的兩個是否能保持平衡，閉上眼睛站不穩就是陽性(不需要推病人，從來沒有一本文獻或教科書說要推病人)", "lvl": 2, "step": false}, {"t": "p", "text": "(3)操作：請病人站直，兩腳併攏，測試者站在病人後方，請病人兩眼睜開，看病人是否會搖晃；接著請病人閉眼，看病人是否會搖晃或跌倒", "lvl": 2, "step": false}, {"t": "p", "text": "(4)核心概念", "lvl": 2, "step": false}, {"t": "p", "text": "a. 張眼站立時： 視覺 + 前庭覺在代償。即使本體感覺壞了，病人也能勉強站穩", "lvl": 4, "step": false}, {"t": "p", "text": "b. 閉上眼睛時 (關閉視覺)： 瞬間只剩下前庭覺。如果原本的本體感覺是壞的(如B12 缺乏 / 亞急性聯合退化症 SCD、梅毒脊髓癆)，1/3 的系統無法支撐平衡，病人會立刻失去平衡甚至傾倒 → 這才是真正的 Romberg sign positive", "lvl": 4, "step": false}, {"t": "p", "text": "11.肌張力測試：測膝跳反射(相信大家都會吧？)，正常人敲完後小腿搖晃不超過4下；小腦病變的人肌張力低下(hypotonia)，小腿搖晃超過4下", "lvl": 0, "step": true}, {"t": "p", "text": "12.Heel to shin test：病人躺著，測試者請病人抬起一隻腳，腳跟去找另一隻腳的膝蓋，沿著脛骨往下滑到腳背，觀察病人下滑過程中是否搖晃或碰不到", "lvl": 0, "step": true}, {"t": "p", "text": "* 測試前要先教病人如何測試", "lvl": 1, "step": false}, {"t": "p", "text": "第1步：抬腳", "lvl": 1, "step": false}, {"t": "p", "text": "第2步：碰膝蓋", "lvl": 1, "step": false}, {"t": "p", "text": "第3步：下滑", "lvl": 1, "step": false}, {"t": "p", "text": "第4步：腳放回原位", "lvl": 1, "step": false}, {"t": "p", "text": "請病人照著測試者的口令動作：1-2-3-4；左右腳都要測", "lvl": 1, "step": false}, {"t": "img", "src": "img/p068.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p069.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p070.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "img", "src": "img/p071.jpg", "w": 374, "h": 248, "dw": 170}, {"t": "p", "text": "13.檢查完記得洗手", "lvl": 0, "step": true}]}, {"id": "neuro2", "zh": "神經系統：上下肢", "en": "Neurological: Upper & Lower limbs", "signs": [{"g": ["外觀與張力", "Appearance & Tone"], "items": [["Muscle atrophy", "肌肉萎縮"], ["Fasciculation", "肌束震顫"], ["Tremor", "顫抖"], ["Pronator drift", "旋前肌偏移"], ["Hypertonia / spasticity", "肌張力過高"], ["Hypotonia", "肌張力過低"]]}, {"g": ["肌力與反射", "Power & Reflexes"], "items": [["Muscle weakness", "肌力下降"], ["Hyperreflexia", "反射亢進"], ["Hyporeflexia / areflexia", "反射減弱或消失"], ["Ankle clonus (> 4 beats)", "踝陣攣"], ["Babinski sign positive", "巴賓斯基徵象陽性"]]}, {"g": ["感覺", "Sensation"], "items": [["Light touch loss", "輕觸覺喪失"], ["Pin-prick loss", "針刺覺喪失"], ["Vibration sense loss", "震動覺喪失"], ["Glove-and-stocking distribution", "手套襪套式分布"], ["Dermatomal sensory loss", "皮節分布感覺喪失"], ["Proprioception loss", "本體感覺喪失"]]}], "blocks": [{"t": "p", "text": "一、上肢", "lvl": 0, "step": false}, {"t": "p", "text": "1. 洗手", "lvl": 0, "step": true}, {"t": "p", "text": "2. 自我介紹＋告知今天要做的檢查項目，獲得同意再開始", "lvl": 0, "step": true}, {"t": "p", "text": "3. 移除遮蔽的衣物", "lvl": 0, "step": true}, {"t": "p", "text": "4. 外觀的一般評估：請患者手伸直，檢查是否有傷疤、肌肉大小是否有萎縮變大或變形、有無不自覺抖動或震顫", "lvl": 0, "step": true}, {"t": "p", "text": "5. 檢查有無upper motor neuron sign(pyrimidal tract sign)：請患者將雙手伸直平舉，手掌向上，眼睛閉起，讓他維持一分鐘，若有手掌往下翻(pronator dirft)、手臂往下垂的現象即為異常。", "lvl": 0, "step": true}, {"t": "p", "text": "6. 檢查肌張力(tone)：一次檢查一隻手，兩隻手都要做", "lvl": 0, "step": true}, {"t": "p", "text": "(1)肘關節：彎曲伸展過程是否順暢，有無張力過低或過強（若過強有會有阻力）", "lvl": 2, "step": false}, {"t": "p", "text": "(2)手腕：360度旋轉，有無張力過低或過強現象（若過強會有阻力）", "lvl": 2, "step": false}, {"t": "p", "text": "7. 肌力(power)：兩側要互相比較，從近側端到遠側端", "lvl": 0, "step": true}, {"t": "p", "text": "(1)肩部肌力：請患者雙手伸直朝兩側舉高90度 ，我們用手雙手對稱下壓他的上臂，若他撐不住就是C5出問題（負責外展的）。我們用手雙手對稱上抬他的上臂，若他撐不住就是C6, 7出問題（負責內收的）。", "lvl": 2, "step": false}, {"t": "p", "text": "(2)手肘肌力：患者呈現以下姿勢測試他手肘extension, flexion的肌力有無異常（手肘的是我們推或拉看他抵抗的力道夠不夠）", "lvl": 2, "step": false}, {"t": "img", "src": "img/p072.jpg", "w": 232, "h": 163, "dw": 106}, {"t": "p", "text": "(3)腕部肌力：患者呈現以下姿勢測試他手腕distension, flexion的肌力有無異常（手腕的要請他自己用力往上或往下）", "lvl": 2, "step": false}, {"t": "img", "src": "img/p073.jpg", "w": 260, "h": 169, "dw": 118}, {"t": "p", "text": "(4)手指肌力：患者呈現以下姿勢測試他手指extension, flexion, abduction的肌力有無異常（手指的是我們上勾、下壓或請他abduction完我們反方向施力，看他抵抗的力道夠不夠）", "lvl": 2, "step": false}, {"t": "img", "src": "img/p074.jpg", "w": 259, "h": 178, "dw": 118}, {"t": "p", "text": "8. 肌反射(deep tendon reflex)：叩診錘用尖部敲打，做完一隻手後做另一邊來互相比較", "lvl": 0, "step": true}, {"t": "p", "text": "(1) bicep tendon: 大拇指要摸到患者肘窩的bicep tendon，確認患者有完全放鬆，再用扣診錘敲打，若沒有收縮的現象即為C5C6出問題。", "lvl": 2, "step": false}, {"t": "img", "src": "img/p075.jpg", "w": 283, "h": 179, "dw": 129}, {"t": "p", "text": "(2)tricep tendon: 手扶住患者的手肘讓他可以放鬆，敲擊tendon", "lvl": 2, "step": false}, {"t": "img", "src": "img/p076.jpg", "w": 366, "h": 212, "dw": 166}, {"t": "img", "src": "img/p077.jpg", "w": 338, "h": 214, "dw": 154}, {"t": "p", "text": "(3)肱橈肌(brachioradialis): 要敲擊的tendon在wrist上方約10公分處", "lvl": 2, "step": false}, {"t": "img", "src": "img/p078.jpg", "w": 366, "h": 223, "dw": 166}, {"t": "img", "src": "img/p079.jpg", "w": 377, "h": 229, "dw": 172}, {"t": "p", "text": "9. 感覺測試-輕觸覺(light touch)：用棉花柔出一個尖端", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，用棉花尖端去觸摸患者鎖骨中線附近處，確認他有清楚感覺到", "lvl": 2, "step": false}, {"t": "p", "text": "(2)請病人閉眼，沿著皮節由遠側端到近側端，用棉花尖端去觸摸測試患者兩側的皮節區域（同個皮節一次左一次右），問：感覺一不一樣？正常都要一樣", "lvl": 2, "step": false}, {"t": "p", "text": "10.感覺測試-針刺感覺(pin-prick)：使用牙線尾端尖尖處來做檢查 （此測試不用閉眼睛）", "lvl": 0, "step": true}, {"t": "p", "text": "(1)先詢問患者身體有無何處是碰到會很不舒服或疼痛的位置", "lvl": 2, "step": false}, {"t": "p", "text": "(2)沿著皮節由遠側端到近側端，用尖端去觸摸測試患者兩側的皮節區域（同個皮節一次左一次右），問：感覺一不一樣？正常都要一樣", "lvl": 2, "step": false}, {"t": "p", "text": "(3)近側端與遠側端也要比較感覺一不一樣？正常都要一樣", "lvl": 2, "step": false}, {"t": "p", "text": "11.感覺測試-震動覺(vibration)：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，用音叉底部接觸患者鎖骨中線附近處，確認他有清楚感到震動感", "lvl": 2, "step": false}, {"t": "p", "text": "(2)請病人閉眼，沿著皮節由遠側端關節伸展面(背側)到近側端，用音叉底部去接觸測試患者兩側的皮節區域（同個皮節一次左一次右），問：感覺一不一樣？正常都要一樣。如果無感覺的區域都集中在遠端呈現手套式分佈，代表有周邊神經病變", "lvl": 2, "step": false}, {"t": "p", "text": "(3)聽起來老師的意思是如果都沒感覺才需要一直從遠端往近端做，如果最遠端是正常的，那震動覺應該就沒問題。", "lvl": 2, "step": false}, {"t": "img", "src": "img/p080.jpg", "w": 257, "h": 264, "dw": 117}, {"t": "p", "text": "12.本體感覺(proprioception)：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，以下圖的方式抓著他的手並且搬動最遠端的指節，搬動往上跟他說這是往上，搬動往下跟他說這是往下，確認患者暸解我們的表達就請他閉眼", "lvl": 2, "step": false}, {"t": "img", "src": "img/p081.jpg", "w": 270, "h": 133, "dw": 123}, {"t": "p", "text": "(2)在患者閉眼的情況下以拇指 最遠端指節為軸心，隨機往上或往下搬動，問他這是往上還是往下，如果問五次有三次以上是正確那就代表該側的本體感覺沒問題。兩側要記得對稱性的檢查。", "lvl": 2, "step": false}, {"t": "p", "text": "(3)若有回答錯誤，我們就以更近側的指節為軸心做測試，再回答錯誤就以手腕做為軸心做測試，再有問題就用手肘，再有問題就用肩膀。", "lvl": 2, "step": false}, {"t": "p", "text": "二、下肢", "lvl": 0, "step": false}, {"t": "p", "text": "1. 洗手", "lvl": 0, "step": true}, {"t": "p", "text": "2. 自我介紹＋告知今天要做的檢查項目，獲得同意再開始", "lvl": 0, "step": true}, {"t": "p", "text": "3. 請患者盡量能移除遮蔽下肢的衣物", "lvl": 0, "step": true}, {"t": "p", "text": "4. 外觀的一般評估：請患者站著，檢查是否有傷疤、肌肉大小是否有萎縮變大或變形、患者在站或坐著時有無不自覺收縮（若有則為該肌肉denervation fasculation）、震顫（若有則為該側有巴金森或原發性震顫）", "lvl": 0, "step": true}, {"t": "p", "text": "5. 先詢問患者下肢有無何處是有傷痛或不舒服的地方，確認沒有再進行後續檢查", "lvl": 0, "step": true}, {"t": "p", "text": "6. 檢查肌張力(tone)：先請患者上床躺著，請他放鬆，一次檢查一隻腳，兩隻腳都要做", "lvl": 0, "step": true}, {"t": "p", "text": "(1)腳踝：360度旋轉或上下移動，有無張力過低或過強現象（若過強會有阻力）", "lvl": 2, "step": false}, {"t": "p", "text": "(2)順便做ankle jerk測試：在患者腳踝放鬆讓你任意旋轉時，我們再用力將患者腳板往其近側一壓，看他的腳板有沒有因此而不自覺的抖動超過四下（若超過則代表upper neuron sign positive，也代表其lesion是高於L5以上的upper motor neuron），兩側都要做", "lvl": 2, "step": false}, {"t": "img", "src": "img/p082.jpg", "w": 305, "h": 174, "dw": 139}, {"t": "p", "text": "(3)膝蓋： 先將病人膝蓋微微上抬，若患者腳跟也跟著離開床代表肌張力過強、若腳跟沒有離開床，而是順順的被往後拉，則為肌張力正常。", "lvl": 2, "step": false}, {"t": "img", "src": "img/p083.jpg", "w": 303, "h": 180, "dw": 138}, {"t": "img", "src": "img/p084.jpg", "w": 313, "h": 175, "dw": 142}, {"t": "p", "text": "正常", "lvl": 4, "step": false}, {"t": "p", "text": "異常", "lvl": 4, "step": false}, {"t": "p", "text": "(4)小腿：糅麵團的方式，抓著前後搖動，檢查肌肉的張力", "lvl": 2, "step": false}, {"t": "img", "src": "img/p085.jpg", "w": 414, "h": 183, "dw": 188}, {"t": "p", "text": "7. 肌力(power)：兩側均要測試、互相比較，從近側端到遠側端", "lvl": 0, "step": true}, {"t": "p", "text": "(1)髖關節(hip joint)：", "lvl": 0, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "flexion：請患者仰臥，我們單手壓患者單側大腿，請病人大腿往上抬，看患者的大腿收縮是否能對抗我們手下壓的力道，若能夠對抗為正常。", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "extension：將手放到病人大腿下方靠近膕窩處，我們將其大腿往上抬起， 請病人將大腿下壓對抗我們的手，若能夠對抗為正常。", "lvl": 3, "step": false}, {"t": "p", "text": "abduction：將雙手方到病人兩側大腿外側靠近膝蓋處，請患者將腳打開，我們", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "測試患者abduction的力道如何。", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "addcution：將雙手方到病人兩側大腿內側靠近膝蓋處，請患者將腳內收，我們測試患者adduction的力道如何。", "lvl": 3, "step": false}, {"t": "p", "text": "(2)膝關節(knee joint)：", "lvl": 0, "step": false}, {"t": "p", "text": "extension: 請患者單腳膝蓋彎曲，呈現如下圖這樣，然後我們一隻手扶著他的", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "膝蓋、一隻手扶著他的脛骨伸展肌面，請他膝蓋用力伸展來對抗我們的手，測試他伸展的力道", "lvl": 3, "step": false}, {"t": "img", "src": "img/p086.jpg", "w": 262, "h": 162, "dw": 119}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "flexion: 我們扶的地方改成一隻手膝蓋、一隻手腳踝後側，將他腳稍微抬起，請他膝蓋用力屈曲來對抗我們的手，測試他內收的力道", "lvl": 3, "step": false}, {"t": "img", "src": "img/p087.jpg", "w": 320, "h": 174, "dw": 146}, {"t": "p", "text": "(3)腳踝(ankle joint)：", "lvl": 0, "step": false}, {"t": "p", "text": "dorsiflexion: 如下圖，請患者腳板往上收縮，來測試力道", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "img", "src": "img/p088.jpg", "w": 231, "h": 178, "dw": 105}, {"t": "p", "text": "plantar flextoin:  如下圖，請患者腳板往下收縮，來測試力道", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "img", "src": "img/p089.jpg", "w": 252, "h": 189, "dw": 115}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "內翻：", "lvl": 3, "step": false}, {"t": "img", "src": "img/p090.jpg", "w": 224, "h": 150, "dw": 102}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "外翻：", "lvl": 3, "step": false}, {"t": "img", "src": "img/p091.jpg", "w": 219, "h": 145, "dw": 100}, {"t": "p", "text": "(4)大拇指：抵住患者大拇指對側，請患者往上頂、往下壓、往外張開，並兩邊比較", "lvl": 0, "step": false}, {"t": "p", "text": "8. 反射：請患者坐在床邊，兩腳懸空，記得兩側都要對稱測試", "lvl": 0, "step": true}, {"t": "p", "text": "(1)膝反射：敲擊臏骨下方，若反射的情況不好，可以請患者左右手用力互拉，這樣會比較容易敲得出來，因為注意力在上肢。兩側都要敲，若反射的強度類似、不會過強代表正常（若敲完搖擺太大，很久才停，如三、四下以上就算，有upper motor neuron sign）", "lvl": 0, "step": false}, {"t": "p", "text": "(2)足踝反射：", "lvl": 0, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "先活動患者腳踝，確認不會緊緊的（確認他腳踝有放鬆）", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "將腳踝稍微提起，即會呈現出阿基里斯腱，我們就敲該肌腱，看有沒有plantar flexion，有才是正常。若患者反射不太強，可以請患者左右手用力互拉，喊握緊後就敲，會比較明顯。", "lvl": 3, "step": false}, {"t": "img", "src": "img/p092.jpg", "w": 369, "h": 187, "dw": 168}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "(3)足底反射(Plantar reflex=Barbinskie sign)：", "lvl": 0, "step": false}, {"t": "p", "text": "-", "lvl": 2, "step": false}, {"t": "p", "text": "用棉籤尾端木頭部分測試，由足底外側慢慢的往內側刮，在刮的同時觀察患者大拇指的移動，正常會flexion，若extension則為barbinskie positve", "lvl": 3, "step": false}, {"t": "img", "src": "img/p093.jpg", "w": 379, "h": 240, "dw": 172}, {"t": "p", "text": "9. 感覺測試-輕觸覺(light touch)：用棉花柔出一個尖端", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，用棉花尖端去觸摸患者脖子處，確認他有清楚感覺到", "lvl": 0, "step": false}, {"t": "p", "text": "(2)請病人閉眼，沿著皮節由遠側端到近側端，用棉花尖端去觸摸測試患者兩側的皮節區域（同個皮節一次左一次右），問：感覺一不一樣？正常都要一樣", "lvl": 0, "step": false}, {"t": "p", "text": "(3)如果無感覺的區域都集中在遠端呈現手套式分佈，代表有周邊神經病變; 若無感覺的區域集中在某一個皮節，代表是腰椎問題導致的情況", "lvl": 0, "step": false}, {"t": "p", "text": "10.  感覺測試-針刺感覺(pin-prick)：使用牙線尾端尖尖處來做檢查 （此測試不用閉眼睛）", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，用棉花尖端去觸摸患者脖子處，確認他有清楚感覺到", "lvl": 0, "step": false}, {"t": "p", "text": "(2)先詢問患者身體有無何處是碰到會很不舒服或疼痛的位置", "lvl": 0, "step": false}, {"t": "p", "text": "(3)沿著皮節由近側端到遠側端，用尖端去觸摸測試患者兩側的皮節區域（同個皮節一次左一次右），問：有沒有感覺？一不一樣？正常都要一樣", "lvl": 0, "step": false}, {"t": "p", "text": "(4)近側端與遠側端也要比較有沒有感覺？一不一樣？正常都要一樣", "lvl": 0, "step": false}, {"t": "p", "text": "(5)若有問題代表spinothalamic tract出問題", "lvl": 0, "step": false}, {"t": "p", "text": "11. 感覺測試-震動覺(vibration)：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，用音叉底部接觸患者鎖骨中線附近處，確認他有清楚感到震動感(不用暴露出前胸即可讓患者測試)", "lvl": 0, "step": false}, {"t": "p", "text": "(2)請病人閉眼，沿著皮節由遠側端關節伸展面(背側)到近側端，用音叉底部去接觸測試患者兩側的皮節區域（同個皮節一次左一次右），問：感覺一不一樣？正常都要一樣。如果無感覺的區域都集中在遠端呈現手套式分佈，代表有周邊神經病變", "lvl": 0, "step": false}, {"t": "p", "text": "(3)順序：雙腳大拇指最遠端的關節背側->雙腳腳踝內側->雙腳髕骨上->雙腳hip的外側", "lvl": 0, "step": false}, {"t": "img", "src": "img/p094.jpg", "w": 387, "h": 293, "dw": 176}, {"t": "p", "text": "12. 本體感覺(proprioception)：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)讓病人張眼，以下圖的方式抓著他的腳並且搬動最遠端的指節，搬動往上跟他說這是往上，搬動往下跟他說這是往下，確認患者暸解我們的表達就請他閉眼", "lvl": 0, "step": false}, {"t": "img", "src": "img/p095.jpg", "w": 660, "h": 473, "dw": 300}, {"t": "p", "text": "(2)在患者閉眼的情況下以拇指 最遠端指節為軸心，隨機往上或往下搬動，問他這是往上還是往下，如果問五次有三次以上是正確那就代表該側的本體感覺沒問題。兩側要記得對稱性的檢查。", "lvl": 0, "step": false}, {"t": "p", "text": "(3)若有回答錯誤，我們就以更近側的指節為軸心做測試，再回答錯誤就以腳踝做為軸心做測試，再有問題就用膝蓋，再有問題就用hip。", "lvl": 0, "step": false}, {"t": "p", "text": "13. 謝謝病人：謝謝您今天的合作，讓我們能夠幫你完成XX的理學檢查", "lvl": 0, "step": true}, {"t": "p", "text": "14. 向病人做簡短報告：經過剛剛的檢查，您上肢與下肢的肌力、反射、感覺都很正常，恭喜", "lvl": 0, "step": true}, {"t": "p", "text": "15. 最後記得洗手", "lvl": 0, "step": true}]}, {"id": "eye", "zh": "眼睛", "en": "Eye (Fundoscopy)", "signs": [{"g": ["眼底鏡", "Fundoscopy"], "items": [["Absent red reflex", "紅光反射消失"], ["Media opacity", "屈光介質混濁"], ["Blurred disc margin (disc edema)", "視神經盤邊緣模糊"], ["Disc pallor (optic atrophy)", "視神經盤變白"], ["Increased cup-to-disc ratio", "杯盤比增加"], ["Macular degeneration / scar", "黃斑部病變"], ["Flame-shaped hemorrhage", "火焰狀出血"], ["Abnormal pigmentation", "異常色素沉積"]]}], "blocks": [{"t": "p", "text": "眼睛的檢查 (含眼底鏡之操作)", "lvl": 0, "step": false}, {"t": "p", "text": "一、眼底鏡構造說明", "lvl": 0, "step": false}, {"t": "p", "text": "1. 頭部：主要光源與旋鈕位於此處", "lvl": 0, "step": true}, {"t": "p", "text": "2. 頸部：有一開關", "lvl": 0, "step": true}, {"t": "p", "text": "3. 體部：為握柄，內含蓄電池", "lvl": 0, "step": true}, {"t": "p", "text": "4. 頭部分正反面：正面接觸病人、反面面對醫師 (有眉墊的那一邊)", "lvl": 0, "step": true}, {"t": "p", "text": "5. 正面由上而下三個開口當中：", "lvl": 0, "step": true}, {"t": "p", "text": "1) 第一個開口為接目孔：檢查時須將接目孔對準病人的眼睛", "lvl": 2, "step": false}, {"t": "img", "src": "img/p135.jpg", "w": 254, "h": 176, "dw": 116}, {"t": "p", "text": "2) 第二個開口為光色旋鈕，可分為綠光、白光、偏極光三種：", "lvl": 2, "step": false}, {"t": "p", "text": "a. 綠光用於觀察血管、網膜出血", "lvl": 4, "step": false}, {"t": "p", "text": "b. 白光用於一般檢查", "lvl": 4, "step": false}, {"t": "p", "text": "c. 偏極光用於消除角膜反光，角膜反光消除以後，更容易觀察到眼底情形，這種光線對於初學者十分有幫助", "lvl": 4, "step": false}, {"t": "p", "text": "3) 第三個開口為光圈旋鈕，可分為小光圈、大光圈、刻度光圈、裂隙光和藍色光五種：", "lvl": 2, "step": false}, {"t": "p", "text": "a. 小光圈用於小瞳孔", "lvl": 4, "step": false}, {"t": "p", "text": "b. 大光圈用於放大後的瞳孔", "lvl": 4, "step": false}, {"t": "p", "text": "c. 刻度光圈用來定量測量網膜病變大小", "lvl": 4, "step": false}, {"t": "p", "text": "d. 裂隙光用於觀察病變的深度", "lvl": 4, "step": false}, {"t": "p", "text": "e. 藍色光用於螢光染色", "lvl": 4, "step": false}, {"t": "p", "text": "6. 反面由上而下亦有三個構造：", "lvl": 0, "step": true}, {"t": "p", "text": "1) 最頂部為眉墊，使用時眉墊應靠緊醫師的眉毛，使眼底鏡不致偏離；", "lvl": 2, "step": false}, {"t": "img", "src": "img/p136.jpg", "w": 268, "h": 186, "dw": 122}, {"t": "p", "text": "2) 第二是接目孔，使用時應靠近醫師的眼睛；", "lvl": 2, "step": false}, {"t": "p", "text": "3) 第三個窗口為屈光鏡顯示窗，紅色刻度代表凹透鏡，黑色刻度代表凸透鏡。", "lvl": 2, "step": false}, {"t": "p", "text": "7. 在眼底鏡頭部的側面還有一個轉盤，用於選擇不同的度數的鏡片，而鏡片的度數就顯示在窗口內。", "lvl": 0, "step": true}, {"t": "p", "text": "二、自我演練", "lvl": 0, "step": false}, {"t": "p", "text": "(一) 基本動作", "lvl": 1, "step": false}, {"t": "p", "text": "1. 持眼底鏡的正確方式是握住眼底鏡的把柄, 並將食指置於鏡片轉盤邊緣, 將鏡", "lvl": 2, "step": false}, {"t": "img", "src": "img/p137.jpg", "w": 374, "h": 259, "dw": 170}, {"t": "p", "text": "片轉盤刻度調到零度。", "lvl": 3, "step": false}, {"t": "p", "text": "2. 檢查者如果戴眼鏡,應該先將眼鏡取下, 並將鏡片轉盤調整到和眼鏡相當的度數, 例如近視100度則調到紅色刻度1, 遠視100度則調到黑色刻度1, 以此類推。", "lvl": 2, "step": false}, {"t": "p", "text": "3. 將眼底鏡置於眼前, 眼睛對準接目孔, 眉墊貼緊眉毛, 經由接目孔觀察視力的影像, 藉此熟悉經由眼底鏡觀察事物的技巧。", "lvl": 2, "step": false}, {"t": "p", "text": "4. 初學者在使用眼底鏡時, 很可能會閉上另外一隻眼睛, 以便專注於眼底鏡內的變化情形, 但是正確的使用方法, 應該是兩眼同時張開, 避免眼睛產生調節或內聚作用。", "lvl": 2, "step": false}, {"t": "p", "text": "5. 眼底鏡的設計完全不需要用到眼球的調節力, 檢查者在檢查病人時, 應該假想視線經由眼底鏡, 穿過病人的眼睛, 落在無限遠的焦點上面, 如此可避免調節力的產生, 不致造成眼睛疲勞的症狀。", "lvl": 2, "step": false}, {"t": "p", "text": "(二) 運轉方法 (可略過)", "lvl": 1, "step": false}, {"t": "p", "text": "1. 眼睛是一個球體,而瞳孔是唯一的窗口。 要想觀察到球體內的各個角落,必須從不同的角度照射光線。 所以操作眼底鏡一個很重要的關鍵,就是要讓眼底鏡在手中靈活運轉。", "lvl": 2, "step": false}, {"t": "p", "text": "2. 運轉的方式可以分為三種：", "lvl": 2, "step": false}, {"t": "p", "text": "1) 水平運轉：以眼底鏡握柄為垂直軸,沿此軸旋轉眼底鏡,可使光線產生水平運轉。", "lvl": 4, "step": false}, {"t": "p", "text": "2) 垂直運轉：以眉墊為旋轉軸,將眼底鏡把柄貼近或離開檢查者的臉部,可產生光線垂直運轉。", "lvl": 4, "step": false}, {"t": "p", "text": "3) 球面運轉：假想眼底鏡和手掌之間有一個關節,手掌是碗面,眼底鏡是球面,球面與碗面之間可以產生360度的自由旋轉。", "lvl": 4, "step": false}, {"t": "p", "text": "3. 有一個簡單的方法可以獨自練習上述三種動作。", "lvl": 2, "step": false}, {"t": "p", "text": "1) 以一手持眼底鏡,另一手手指微微向內彎曲,形成一球狀體,五指約略集中成圓形。", "lvl": 4, "step": false}, {"t": "p", "text": "2) 球體代表眼睛,五指圓形代表瞳孔。以眼底鏡觀察手掌上的掌紋,甚至指紋。", "lvl": 4, "step": false}, {"t": "p", "text": "3) 反覆演練上述三種動作,直到熟練為止。", "lvl": 4, "step": false}, {"t": "p", "text": "三、實際操作", "lvl": 0, "step": false}, {"t": "p", "text": "(三) 病人準備", "lvl": 1, "step": false}, {"t": "p", "text": "1. 病人坐於檢查椅上,背部已挺直,避免向後仰臥。", "lvl": 2, "step": false}, {"t": "p", "text": "2. 請病人雙眼注視遠方目標,可以讓病人眨眼睛,但不可左右轉動。", "lvl": 2, "step": false}, {"t": "p", "text": "3. 檢查時應記得以右手持眼底鏡,用右眼檢查病人的右眼。", "lvl": 2, "step": false}, {"t": "p", "text": "4. 反之,以左手持眼底鏡,用左眼檢查病人的左眼。", "lvl": 2, "step": false}, {"t": "p", "text": "5. 以眼底鏡接近病人眼睛時,不要碰到病人的眉毛或是睫毛(距患者眼睛2至三公分), 以免病人眨眼睛而無法檢查。", "lvl": 2, "step": false}, {"t": "p", "text": "6. 如果病人真的很緊張,一直無法張開眼睛, 檢查者可以另一隻手輕輕撐開病人的眨眼皮, 但時間不可太久,以免病人眼睛覺得乾燥而更加想要閉上眼睛。", "lvl": 2, "step": false}, {"t": "p", "text": "7. 檢查時室內應保持黑暗。", "lvl": 2, "step": false}, {"t": "p", "text": "(四) 視神經盤檢查", "lvl": 1, "step": false}, {"t": "p", "text": "1. 以眼底鏡距離病人約30公分,觀察紅光反射。", "lvl": 2, "step": false}, {"t": "p", "text": "2. 如果你看不到紅光反射,很可能你的眼睛沒有對準接目孔, 或是光線沒有對準病人的瞳孔(虹膜)。正常的紅光反射,表示受檢者的眼睛介質清晰透明(檢測折射中介質的任何混濁), 適合做眼底鏡檢查。", "lvl": 2, "step": false}, {"t": "p", "text": "3. 看到紅光反射以後,再以眼底鏡逐漸接近病人, 直到盡量靠近,但又不至於碰到病人位置。", "lvl": 2, "step": false}, {"t": "p", "text": "4. 記住,雙眼同時張開,不要產生任何調節作用或內聚作用。 這個時候,眼底鏡的屈光度數顯示窗應該是0 (若不為0應調整直接眼底鏡至適當屈光度), 如果出現紅色刻度的數字,表示檢查者用到了調節作用。", "lvl": 2, "step": false}, {"t": "p", "text": "5. 這是正常的眼底情形,", "lvl": 2, "step": false}, {"t": "img", "src": "img/p138.jpg", "w": 900, "h": 625, "dw": 442}, {"t": "p", "text": "視神經盤的位置在黃斑部離顳側約15度的地方, 因此若要尋找視神經盤,應沿著四周偏顳側約15度, 以及病人外側15度的位置。 如果無法找到視神經盤, 即可沿著網膜血管向較粗的一端追蹤,即可找到視神經盤的位置。", "lvl": 3, "step": false}, {"t": "p", "text": "6. 找到視神經盤後,注意觀察它的 (並檢飾視神經及相關結構)", "lvl": 2, "step": false}, {"t": "p", "text": "1) 大小：以小光圈檢查時,可完全涵蓋整個視神經盤。", "lvl": 4, "step": false}, {"t": "p", "text": "2) 形狀：正常的視神經盤呈圓形或橢圓形。", "lvl": 4, "step": false}, {"t": "p", "text": "3) 顏色：淡紅色為正常的顏色,變白表示視神經萎縮。", "lvl": 4, "step": false}, {"t": "p", "text": "4) 視神經盤凹陷：估計水平凹陷與垂直凹陷的比例。 凹陷增大表示有青光眼。", "lvl": 4, "step": false}, {"t": "p", "text": "5) 邊緣：邊緣應該清晰可見,邊緣模糊則表示有視神經水腫。", "lvl": 4, "step": false}, {"t": "p", "text": "(五) 黃斑部檢查", "lvl": 1, "step": false}, {"t": "p", "text": "1. 黃斑部是視力最主要的一個部分, 視軸的終點就是落在黃斑部,", "lvl": 2, "step": false}, {"t": "p", "text": "2. 正常的黃斑部呈現淡黃色的反光, 正中央有一個針孔狀的小點,", "lvl": 2, "step": false}, {"t": "p", "text": "3. 黃斑部的位置在視神經盤的顳側兩個盤直徑,Disc Diameter的距離。 因此觀察黃斑部,應將眼睛向鼻側轉15度。", "lvl": 2, "step": false}, {"t": "p", "text": "4. 另外一個簡單的方法就是讓受檢者注視眼睛的光線, 但此時應將眼睛的光線調弱,以免對病人的眼睛造成刺激,時間亦不可太長。", "lvl": 2, "step": false}, {"t": "p", "text": "5. 老年性黃斑部病變的患者,正常的黃斑部會被纖維化的結疤組織所取代。", "lvl": 2, "step": false}, {"t": "p", "text": "(六) 周邊網膜血管檢查", "lvl": 1, "step": false}, {"t": "p", "text": "1. 由視神經盤開始,沿著網膜血管的走向,觀察視神經盤周圍的血管即視網膜。", "lvl": 2, "step": false}, {"t": "p", "text": "2. 在檢查上方網膜時,可請病人眼睛向上看, 檢查下方網膜時,亦可令病人眼睛向下看,但此時眼皮亦跟著下垂, 可用拇指輕輕撐開上眼皮,以方便檢查的進行。", "lvl": 2, "step": false}, {"t": "p", "text": "3. 最後可運用前面介紹的球面運轉,對整個周邊視網膜做360度的詳細檢查。", "lvl": 2, "step": false}, {"t": "p", "text": "1) 網膜動脈顏色鮮紅,管徑較細,", "lvl": 4, "step": false}, {"t": "p", "text": "2) 網膜靜脈呈暗紅色,管徑較粗。", "lvl": 4, "step": false}, {"t": "p", "text": "3) 看到火焰狀出血的時候,表示網膜中央靜脈阻塞。", "lvl": 4, "step": false}, {"t": "p", "text": "4) 異常的色素沉積,表示視網膜色素呈病變。", "lvl": 4, "step": false}, {"t": "p", "text": "四、take home message", "lvl": 0, "step": false}, {"t": "p", "text": "1. 親自動手操作練習是唯一的訣竅。", "lvl": 0, "step": true}, {"t": "p", "text": "2. 盡量保持兩眼同時張開。", "lvl": 0, "step": true}, {"t": "p", "text": "3. 不要長時間照射病人眼睛太久,以免造成光傷害。 尤其是黃斑部,檢查時間以不超過十秒鐘為宜。", "lvl": 0, "step": true}, {"t": "p", "text": "4. 不要勉強睜開病人的眼睛,即使有此需要,時間也不可太久。 請記住,眨眼睛是人類的自然反應,不可因為病人眨眼睛而加以責怪。 一個安靜的環境,事先充分的溝通,是時檢查順利進行的重要條件之一。", "lvl": 0, "step": true}, {"t": "p", "text": "5. 應使用短效散瞳劑,0.5%tropicamide,並事先告知可能產生的副作用, 例如畏光、流淚、刺痛、視力模糊等等。 副作用的時間持續約四到六個鐘頭。 尤其要注意的是,對於前房角狹窄、有青光眼病史的患者,要注意預防青光眼的發生。 除非有特殊需要,否則應避免對這類患者進行散瞳檢查。 檢查完畢以後,可點1%pilocarpine,縮短散瞳的時間。", "lvl": 0, "step": true}, {"t": "p", "text": "五、講義 - 直接眼底鏡使用的步驟", "lvl": 0, "step": false}, {"t": "p", "text": "1. 洗手。", "lvl": 0, "step": true}, {"t": "p", "text": "2. 準備直接眼底鏡，檢查直接眼底鏡是否正常運作，燈光是否恰當。", "lvl": 0, "step": true}, {"t": "p", "text": "3. 自我介紹，並向病人解釋步驟。", "lvl": 0, "step": true}, {"t": "p", "text": "4. 確認病人是否適合接受檢查及注意病人安全。", "lvl": 0, "step": true}, {"t": "p", "text": "5. 檢查前先關燈(暗室下檢查) ，調整病人於適當檢查高度並請病人向前凝視遠方。", "lvl": 0, "step": true}, {"t": "p", "text": "6. 調整直接眼底鏡之適當屈光度。", "lvl": 0, "step": true}, {"t": "p", "text": "7. 檢查患者之紅光反射(red reflex)，並將直接眼底鏡對焦於虹膜。", "lvl": 0, "step": true}, {"t": "p", "text": "8. 持儀器之手的尺側邊緣接觸患者臉頰，以保持儀器穩定地對患者面部，距患者眼睛二至三公分處；另一隻手之拇指提起檢查眼之上眼瞼，左眼檢查左眼，右眼檢查右眼。", "lvl": 0, "step": true}, {"t": "p", "text": "9. 檢測折射中介質的任何混濁，對焦於視盤，並檢視網膜神經纖維層處。", "lvl": 0, "step": true}, {"t": "p", "text": "10.檢查結束，是否關閉電源並將直接眼底鏡收拾整齊", "lvl": 0, "step": true}, {"t": "p", "text": "11.記錄結果，並將直接眼底鏡收拾整齊，向病患說明檢查結果。", "lvl": 0, "step": true}, {"t": "img", "src": "img/p139.jpg", "w": 768, "h": 702, "dw": 452}, {"t": "p", "text": "六、ChatGPT根據以上內容生成的東西", "lvl": 0, "step": false}, {"t": "p", "text": "1. 洗手", "lvl": 0, "step": true}, {"t": "p", "text": "- 檢查前，首先徹底洗手，確保手部清潔，維護檢查過程的衛生。", "lvl": 0, "step": false}, {"t": "p", "text": "2. 準備眼底鏡", "lvl": 0, "step": true}, {"t": "p", "text": "- 檢查眼底鏡是否運作正常。確認光源穩定，亮度適中，並根據需要調整光圈的大小，尤其是要考慮病人的瞳孔大小選擇合適的光圈。", "lvl": 0, "step": false}, {"t": "p", "text": "3. 自我介紹與解釋步驟", "lvl": 0, "step": true}, {"t": "p", "text": "- 進入檢查區域後，向病人自我介紹，並清楚解釋檢查步驟。說明檢查過程中會使用光線來觀察眼底，讓病人放鬆並合作。", "lvl": 0, "step": false}, {"t": "p", "text": "4. 確認病人狀況與檢查環境", "lvl": 0, "step": true}, {"t": "p", "text": "- 確認病人是否適合進行檢查，並特別留意病人是否有青光眼病史或前房角狹窄等情況。接著，將燈光調暗，保持暗室環境，並調整病人至適當的檢查高度，要求病人凝視遠方。", "lvl": 0, "step": false}, {"t": "p", "text": "5. 調整屈光度", "lvl": 0, "step": true}, {"t": "p", "text": "- 根據病人視力情況，調整眼底鏡的屈光度。若病人有近視或遠視，將屈光度調整至相應的刻度（近視調紅色刻度，遠視調黑色刻度）。", "lvl": 0, "step": false}, {"t": "p", "text": "6. 檢查紅光反射", "lvl": 0, "step": true}, {"t": "p", "text": "- 使用眼底鏡距離病人約30公分處，檢查紅光反射，並將眼底鏡對準病人的瞳孔。如果沒有看到紅光反射，檢查儀器是否對準病人的眼睛。紅光反射正常，表示眼睛透明介質清晰。", "lvl": 0, "step": false}, {"t": "p", "text": "7. 穩定儀器與手部位置", "lvl": 0, "step": true}, {"t": "p", "text": "- 檢查過程中，手部應保持穩定，握持眼底鏡的手輕輕接觸病人臉頰，保持儀器距離病人眼睛約2至3公分。右眼用右手檢查，左眼用左手檢查，同時用另一隻手輕輕提起病人的上眼瞼，確保視野清晰。", "lvl": 0, "step": false}, {"t": "p", "text": "8. 檢查視神經盤與網膜", "lvl": 0, "step": true}, {"t": "p", "text": "- 在紅光反射正常後，進一步檢查折射中介質是否有混濁。將眼底鏡對焦於視神經盤，觀察視神經及相關結構，包括視神經盤的大小、形狀、顏色和凹陷程度，並沿著網膜血管檢查周邊的網膜。", "lvl": 0, "step": false}, {"t": "p", "text": "9. 保持檢查穩定與清晰", "lvl": 0, "step": true}, {"t": "p", "text": "- 確保檢查儀器穩定對準病人的眼睛，並保持雙眼同時張開，以避免任何調節作用，這樣可以減少檢查疲勞。", "lvl": 0, "step": false}, {"t": "p", "text": "10. 結束檢查", "lvl": 0, "step": true}, {"t": "p", "text": "- 檢查完成後，關閉眼底鏡的電源，將儀器收拾整齊，並記得將所有物品整理好，保持檢查區域的整潔。", "lvl": 0, "step": false}, {"t": "p", "text": "11. 記錄與說明結果", "lvl": 0, "step": true}, {"t": "p", "text": "- 最後，記錄檢查結果，並向病人解釋檢查的發現與後續的建議。如果有任何異常或需要進一步處理的事項，應清楚告知病人。感謝病人的配合。", "lvl": 0, "step": false}]}, {"id": "ear", "zh": "耳朵", "en": "Ear", "signs": [{"g": ["視診與觸診", "Inspection & Palpation"], "items": [["Auricle deformity", "耳殼變形"], ["Post-auricular scar", "耳後疤痕"], ["Periauricular lymphadenopathy", "耳周淋巴結腫大"]]}, {"g": ["聽力與耳鏡", "Hearing & Otoscopy"], "items": [["Rinne negative (BC > AC)", "林內試驗陰性"], ["Weber lateralization", "韋伯試驗偏側"], ["Tympanic membrane abnormality", "耳膜異常"], ["Ear discharge", "耳漏"], ["Cerumen impaction", "耳垢栓塞"]]}], "blocks": [{"t": "p", "text": "第一部分", "lvl": 0, "step": false}, {"t": "p", "text": "1. 先跟病人自我介紹一下我是誰，然後要做甚麼", "lvl": 0, "step": true}, {"t": "p", "text": "「先生你好，我是林醫師，等一下幫你做耳朵檢查，請問您是否同意？」", "lvl": 1, "step": false}, {"t": "p", "text": "2. 病史詢問：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)若病患有聽力喪失可能，評估項目需包括聽力喪失的病史詢問：單/雙側？開始時間、持續時間、嚴重性、對生活的影響", "lvl": 2, "step": false}, {"t": "p", "text": "(2)相關的病徵：耳鳴、眩暈、分泌物、體重減輕等", "lvl": 2, "step": false}, {"t": "p", "text": "(3)環境詢問：噪音暴露、創傷、感染、家族病史", "lvl": 2, "step": false}, {"t": "p", "text": "(4)對患者生活的影響", "lvl": 2, "step": false}, {"t": "p", "text": "(5)先前耳朵的問題：是否開過刀、頭部外傷等狀況", "lvl": 2, "step": false}, {"t": "p", "text": "3. 注意病人隱私，異性要請護理人員陪同", "lvl": 0, "step": true}, {"t": "p", "text": "動作：拉簾子", "lvl": 1, "step": false}, {"t": "p", "text": "4. 洗手戴手套", "lvl": 0, "step": true}, {"t": "p", "text": "「首先檢查前先做洗手、戴手套」", "lvl": 1, "step": false}, {"t": "p", "text": "第二部分（Rinne test & Weber test）", "lvl": 0, "step": false}, {"t": "p", "text": "5. Rinne test：用512Hz的音叉，敲擊產生震動後，將音叉底部置於耳朵後方乳突部的位置(如下左圖)。以Sensory hearing loss患者為例，當Bone conduction停止後病人聽不到音叉聲音時，再將音叉移至耳旁(如下右圖)，他應該還是聽得見(所謂Air conduction> Bone conduction)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p099.jpg", "w": 387, "h": 303, "dw": 176}, {"t": "img", "src": "img/p100.jpg", "w": 392, "h": 303, "dw": 178}, {"t": "p", "text": "*Rinne test (區段筆記)", "lvl": 1, "step": false}, {"t": "p", "text": "(1)操作方式: 將震動的音叉放置在顳乳突上(骨傳導)，當震動的聲音消失後，再把音叉移到耳道外(氣傳導)，並看受試者此時是否聽得到聲音(正常而言氣導會比骨導好(AC > BC)，故positive者為正常人)", "lvl": 2, "step": false}, {"t": "p", "text": "(2)若Negative時(即BC > AC)，此耳即為傳導性聽力障礙 (因為阻塞了AC才<BC)", "lvl": 2, "step": false}, {"t": "p", "text": "(3)若聽不到，此耳則為神經性聽力障礙(Sensory hearing loss)", "lvl": 2, "step": false}, {"t": "p", "text": "6. Weber test: 用520Hz音叉產生震動後置於顱骨正中央，正常人無任何Sensory hearing loss兩邊會同時聽到聲音，若病人為神經性聽力障礙(Sensory hearing loss)則只有Normal side聽得到。", "lvl": 0, "step": true}, {"t": "img", "src": "img/p101.jpg", "w": 264, "h": 229, "dw": 120}, {"t": "p", "text": "*Weber test (區段筆記)", "lvl": 1, "step": false}, {"t": "p", "text": "(1)操作方式: 將音叉放在頭部中線，使聲音經骨傳導(BC)進入內耳，對正常人而言兩耳聽到的聲音應該一樣大聲", "lvl": 2, "step": false}, {"t": "p", "text": "(2)若患者聽到其中一側的聲音較大聲，則有下列兩種鑑別診斷:", "lvl": 2, "step": false}, {"t": "p", "text": "A. 較大聲側的傳導性聽力障礙：因患側的氣導(AC)途徑受阻，患側較不受外界噪音干擾，故患側能聽到較大聲的骨傳導(即BC > AC)", "lvl": 4, "step": false}, {"t": "p", "text": "B. 較小聲側的神經性聽力障礙(感音性聽力障礙)：因患側聽覺途徑受損，因此患側聽不清楚(AC與BC皆聽不清楚)", "lvl": 4, "step": false}, {"t": "p", "text": "※傳導性聽力障礙: 因耳屎堵住、耳膜破損、中耳腔積水、中耳病灶等原因使患者的氣導途徑受阻，但仍然聽得到經骨傳導的聲音", "lvl": 4, "step": false}, {"t": "img", "src": "img/p102.jpg", "w": 406, "h": 422, "dw": 304}, {"t": "img", "src": "img/p103.jpg", "w": 767, "h": 1354, "dw": 424}, {"t": "p", "text": "解: Weber test右耳較大聲→右耳傳導性聽力障礙or左耳神經性聽力障礙", "lvl": 1, "step": false}, {"t": "p", "text": "Rinne test右側negative，左側positive→右耳傳導性聽力障礙，左耳正常，選(C)", "lvl": 1, "step": false}, {"t": "p", "text": "第三部分", "lvl": 0, "step": false}, {"t": "p", "text": "7. 視診：檢查耳殼大小、形狀、是否有任何變形、Atenogran現象、耳後有無傷疤、病人有無做過耳朵手術之疤痕", "lvl": 0, "step": true}, {"t": "p", "text": "8. 觸診：耳前、耳上、耳後、耳下是否有發炎之淋巴結", "lvl": 0, "step": true}, {"t": "p", "text": "9. 耳鏡(Autoscope)檢查：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)先挑選適合的耳鏡，並檢查器材功能正常", "lvl": 2, "step": false}, {"t": "img", "src": "img/p104.jpg", "w": 425, "h": 199, "dw": 194}, {"t": "p", "text": "(2)檢查大人需將耳朵向後上拉，將耳鏡沿著耳道向內看", "lvl": 2, "step": false}, {"t": "p", "text": "(3)需觀察：耳膜狀況", "lvl": 2, "step": false}, {"t": "p", "text": "第四部分（總結）", "lvl": 0, "step": false}, {"t": "p", "text": "10.詢問患者是否有任何問題，並感謝病患配合", "lvl": 0, "step": true}, {"t": "p", "text": "11.總結發現結果：以神經性聽力障礙為例", "lvl": 0, "step": true}, {"t": "p", "text": "「你是神經性聽力障礙，是最常見的老化狀況，所以耳膜是正常的，Rinne test AC >BC，Weber test只有正常耳朵聽得到(若兩邊都老化則沒有Shift的現象)」", "lvl": 1, "step": false}, {"t": "img", "src": "img/p105.jpg", "w": 900, "h": 559, "dw": 452}]}, {"id": "throat", "zh": "咽喉", "en": "Oral cavity & Pharynx", "signs": [{"g": ["口咽", "Oropharynx"], "items": [["Absent gag reflex", "嘔吐反射消失"], ["Tongue lesion", "舌部病灶"], ["Oral mucosal lesion / ulcer", "口腔黏膜病灶或潰瘍"], ["Palatal lesion", "硬顎或軟顎病灶"], ["Pharyngeal erythema", "咽部紅腫"], ["Tonsillar enlargement", "扁桃腺腫大"], ["Tonsillar exudate", "扁桃腺滲出物"]]}], "blocks": [{"t": "p", "text": "1. 先跟病人自我介紹一下我是誰，然後要做甚麼", "lvl": 0, "step": true}, {"t": "p", "text": "「先生你好，我是林醫師，等一下幫你做咽喉檢查，請問您是否同意？」", "lvl": 1, "step": false}, {"t": "p", "text": "2. 注意病人隱私，異性要請護理人員陪同", "lvl": 0, "step": true}, {"t": "p", "text": "動作：拉簾子", "lvl": 1, "step": false}, {"t": "p", "text": "3. 準備壓舌板、筆燈，洗手戴手套", "lvl": 0, "step": true}, {"t": "p", "text": "「準備壓舌板、筆燈，首先檢查前先做洗手、戴手套」", "lvl": 1, "step": false}, {"t": "p", "text": "4. 「先生請問您口腔內有無異物，假牙、牙套等？」", "lvl": 0, "step": true}, {"t": "p", "text": "5. 「先生請放鬆，請下巴微微上提、張開嘴巴(我們的手將患者下巴微微上提)」", "lvl": 0, "step": true}, {"t": "p", "text": "6. 「以筆燈與壓舌板檢查患者舌部，並下壓觀察有無嘔吐反射」", "lvl": 0, "step": true}, {"t": "p", "text": "7. 「檢查患者口腔黏膜、硬顎、軟顎、舌底、口咽、兩側扁桃腺」", "lvl": 0, "step": true}, {"t": "p", "text": "8. 「先生，咽喉檢查已完成，請問有沒有哪裡不舒服？」", "lvl": 0, "step": true}, {"t": "p", "text": "舌部", "lvl": 0, "step": false}, {"t": "img", "src": "img/p106.jpg", "w": 301, "h": 278, "dw": 137}, {"t": "p", "text": "舌底", "lvl": 4, "step": false}, {"t": "img", "src": "img/p107.jpg", "w": 323, "h": 240, "dw": 147}, {"t": "p", "text": "口腔黏膜", "lvl": 0, "step": false}, {"t": "img", "src": "img/p108.jpg", "w": 346, "h": 235, "dw": 158}, {"t": "p", "text": "口咽", "lvl": 4, "step": false}, {"t": "img", "src": "img/p109.jpg", "w": 323, "h": 248, "dw": 147}, {"t": "p", "text": "硬顎", "lvl": 0, "step": false}, {"t": "img", "src": "img/p110.jpg", "w": 346, "h": 274, "dw": 158}, {"t": "p", "text": "兩側扁桃", "lvl": 4, "step": false}, {"t": "img", "src": "img/p111.jpg", "w": 323, "h": 219, "dw": 147}, {"t": "p", "text": "腺", "lvl": 4, "step": false}, {"t": "p", "text": "軟顎", "lvl": 0, "step": false}, {"t": "img", "src": "img/p112.jpg", "w": 346, "h": 262, "dw": 158}, {"t": "img", "src": "img/p113.jpg", "w": 900, "h": 555, "dw": 452}]}, {"id": "neck", "zh": "頸部及甲狀腺", "en": "Neck & Thyroid", "signs": [{"g": ["頸部", "Neck"], "items": [["Visible neck mass", "可見頸部腫塊"], ["Erythema / swelling", "發紅或腫脹"], ["Asymmetry", "不對稱"], ["Mass moves with swallowing", "腫塊隨吞嚥移動"], ["Goiter", "甲狀腺腫大"], ["Thyroid nodule", "甲狀腺結節"], ["Cervical lymphadenopathy", "頸部淋巴結腫大"], ["Thyroid bruit", "甲狀腺雜音"], ["Tenderness", "壓痛"]]}], "blocks": [{"t": "p", "text": "1. 「檢查前先洗手、戴手套、把手搓溫熱」", "lvl": 0, "step": true}, {"t": "p", "text": "2. 先跟病人自我介紹一下我是誰，然後要做甚麼", "lvl": 0, "step": true}, {"t": "p", "text": "「先生你好，我是林醫師，等一下幫你做頸部與甲狀腺的檢查，請您放輕鬆，應該不會有什麼不舒服。」", "lvl": 1, "step": false}, {"t": "p", "text": "3. 如果患者衣物會蓋到檢查範圍要拉開露出受檢部位，若為女性患者需護理師陪同，檢查範圍從耳朵、下頷骨下緣到鎖骨上緣", "lvl": 0, "step": true}, {"t": "p", "text": "「先生，你這個衣物會擋到檢查範圍，我幫你稍微拉開」", "lvl": 1, "step": false}, {"t": "p", "text": "4. 視診，抬高是為了上提氣管使腫塊更明顯，吞口水看腫塊是否會跟著滑動", "lvl": 0, "step": true}, {"t": "p", "text": "「首先我們要做視診，先生請您把頭抬高，觀察頸部有無肉眼可見之異常，請幫我吞一下口水，觀察頸部有無發紅、腫脹與不對稱之處」", "lvl": 1, "step": false}, {"t": "p", "text": "5. 觸診：站到病人背側，大拇指在頸後、其他手指於觸診位置(如下圖)。觸診可以一側手扶著、另一側手去壓(不是壓肌肉，而是壓腫塊看有無跟著壓力移動)", "lvl": 0, "step": true}, {"t": "p", "text": "「接下來要做觸診檢查，先確認胸鎖乳突肌位置，並從第一區開始做觸診，往後到胸鎖乳突肌的第二區，接著往下摸三、四區。接下來摸第五區，也就是胸鎖乳突肌後側，最後是第六區，也就是甲狀腺位置所在，觸診看甲狀腺有無對稱，先生請幫我吞口水來確認甲狀腺的滑動。」", "lvl": 1, "step": false}, {"t": "img", "src": "img/p096.jpg", "w": 523, "h": 343, "dw": 238}, {"t": "img", "src": "img/p097.jpg", "w": 336, "h": 409, "dw": 153}, {"t": "p", "text": "6. 如果有摸到甲狀腺腫塊，懷疑甲狀腺亢進腫大，可以做聽診", "lvl": 0, "step": true}, {"t": "p", "text": "「聽腫塊有無Bruit的情況，將聽診器溫熱後，放在硬塊上緣看有無雜音」", "lvl": 1, "step": false}, {"t": "p", "text": "7. 和病人解釋檢查結果並詢問有無不適。腫塊描述之特徵可包括位置、大小、硬度、移動性、是否疼痛", "lvl": 0, "step": true}, {"t": "p", "text": "「先生剛剛發現在⋯⋯有個腫塊，那⋯⋯⋯⋯。今天這樣檢查完有沒有哪裡不舒服呢？」", "lvl": 1, "step": false}, {"t": "img", "src": "img/p098.jpg", "w": 809, "h": 622, "dw": 452}]}, {"id": "lymph", "zh": "淋巴結", "en": "Lymph nodes", "signs": [{"g": ["分布", "Distribution"], "items": [["Localized lymphadenopathy", "局部淋巴結腫大"], ["Generalized lymphadenopathy", "全身性淋巴結腫大"], ["Supraclavicular node", "鎖骨上淋巴結"], ["Virchow's node (left supraclavicular)", "左鎖骨上淋巴結"], ["Sister Mary Joseph's node", "臍周淋巴結"], ["Splenomegaly", "脾腫大"]]}, {"g": ["特性", "Characteristics"], "items": [["Enlarged (> 1 cm)", "腫大"], ["Tender", "有壓痛"], ["Painless & enlarging", "無痛且持續變大"], ["Hard", "質地堅硬"], ["Rubbery", "橡皮狀"], ["Soft", "質地柔軟"], ["Matted / fixed", "沾黏固定"]]}], "blocks": [{"t": "img", "src": "img/p140.jpg", "w": 900, "h": 530, "dw": 452}, {"t": "p", "text": "Background knowledge", "lvl": 0, "step": false}, {"t": "p", "text": "1. 大部分淋巴結腫大是良性病灶", "lvl": 0, "step": true}, {"t": "p", "text": "2. Abnormal: > 1cm (不一定惡性)", "lvl": 0, "step": true}, {"t": "p", "text": "3. 可以靠Excisional biopsy or need biopsy", "lvl": 0, "step": true}, {"t": "p", "text": "4. Lymphadenopathy: 3/4為Localixed、1/4為generalized", "lvl": 0, "step": true}, {"t": "img", "src": "img/p141.jpg", "w": 376, "h": 470, "dw": 171}, {"t": "p", "text": "5. Infectious最多：以Virus最多(EBV, CMV)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p142.jpg", "w": 859, "h": 434, "dw": 391}, {"t": "p", "text": "6. Immunologic: 比感染少很多", "lvl": 0, "step": true}, {"t": "img", "src": "img/p143.jpg", "w": 760, "h": 461, "dw": 346}, {"t": "p", "text": "7. Malignant: 最怕的", "lvl": 0, "step": true}, {"t": "img", "src": "img/p144.jpg", "w": 831, "h": 214, "dw": 378}, {"t": "p", "text": "8. Metabolism and endocrine", "lvl": 0, "step": true}, {"t": "img", "src": "img/p145.jpg", "w": 640, "h": 199, "dw": 291}, {"t": "p", "text": "9. Other", "lvl": 0, "step": true}, {"t": "img", "src": "img/p146.jpg", "w": 839, "h": 504, "dw": 382}, {"t": "p", "text": "臨床評估步驟", "lvl": 0, "step": false}, {"t": "p", "text": "1. 病史詢問：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)何時發生？時間多久(看變化速度)？合併症狀（發燒，全身倦怠，體重減輕，有無上呼吸道或是腸胃道症狀等）", "lvl": 2, "step": false}, {"t": "p", "text": "(2)有無抽煙、飲酒、檳榔習慣？", "lvl": 2, "step": false}, {"t": "p", "text": "(3)有無輸血？", "lvl": 2, "step": false}, {"t": "p", "text": "(4)性行為或藥物史？", "lvl": 2, "step": false}, {"t": "p", "text": "2. 病人年紀：孩童？年輕成人？超過40歲之成人？", "lvl": 0, "step": true}, {"t": "p", "text": "詳細的理學檢查", "lvl": 0, "step": false}, {"t": "p", "text": "3. 先判斷是Generalized or localized", "lvl": 0, "step": true}, {"t": "p", "text": "4. 淋巴結回流經過的部位要去看一下有無腫大情況，如鼠蹊部、膝後膕窩⋯⋯", "lvl": 0, "step": true}, {"t": "p", "text": "5. 常見淋巴結部位也都看一下有無腫大情況", "lvl": 0, "step": true}, {"t": "img", "src": "img/p147.jpg", "w": 813, "h": 589, "dw": 370}, {"t": "p", "text": "6. 看病人有無合併Splenomegaly，若有的話要考慮到Hematological disease", "lvl": 0, "step": true}, {"t": "p", "text": "(mononucleosis-type syndromes, acute/chronic leukemia, lymphoma and", "lvl": 1, "step": false}, {"t": "p", "text": "sarcoidosis)", "lvl": 1, "step": false}, {"t": "p", "text": "7. 發現淋巴腫大時，要觀察其什麼特性？", "lvl": 0, "step": true}, {"t": "p", "text": "(1)大小：異常通常是>1cm", "lvl": 2, "step": false}, {"t": "p", "text": "Epitrochlear nodes則是>0.5cm", "lvl": 3, "step": false}, {"t": "p", "text": "Inguinal nodes則要>1.5cm", "lvl": 3, "step": false}, {"t": "img", "src": "img/p148.jpg", "w": 773, "h": 368, "dw": 352}, {"t": "p", "text": "(2)疼痛與否", "lvl": 2, "step": false}, {"t": "p", "text": "a. 有痛的話可能跟發炎性疾病比較有關", "lvl": 4, "step": false}, {"t": "p", "text": "b. 若無痛且持續變大很可能是惡性的", "lvl": 4, "step": false}, {"t": "p", "text": "(3)Consistency(軟硬質地)：", "lvl": 2, "step": false}, {"t": "p", "text": "a. 硬到爆：通常是Cancer", "lvl": 4, "step": false}, {"t": "p", "text": "b. 稍微硬像橡皮：Lymphoma", "lvl": 4, "step": false}, {"t": "p", "text": "c. Softer nodes：感染發炎相關", "lvl": 4, "step": false}, {"t": "p", "text": "(4)Matting(能否移動)：", "lvl": 2, "step": false}, {"t": "p", "text": "a. Malignancy：和周邊組織沾黏厲害，不大會移動", "lvl": 4, "step": false}, {"t": "p", "text": "b. Benign：可移動", "lvl": 4, "step": false}, {"t": "p", "text": "(5)位置", "lvl": 2, "step": false}, {"t": "p", "text": "a. Cat-scratch disease: cervical or axillary lymphadenopathy", "lvl": 4, "step": false}, {"t": "p", "text": "b. Infectious mononucleosis: cervical lymphadenopathy", "lvl": 4, "step": false}, {"t": "p", "text": "c. STD: inguinal lymphadenopathy", "lvl": 4, "step": false}, {"t": "p", "text": "d. Supraclavicular lymphadenopathy: highest risk of malignancy→ estimated as 90% in patients older than 40 years", "lvl": 4, "step": false}, {"t": "p", "text": "→ 25% in those younger than age 40", "lvl": 4, "step": false}, {"t": "p", "text": "根據淋巴腫大位置會考慮到什麼部位問題", "lvl": 0, "step": false}, {"t": "p", "text": "1. 頭頸部LN分布：preauricular(耳後), submandibular(下頷骨下), anterior cervical(前頸), posterior cervical(後頸), supraclavicular(鎖骨上)，看到以下位置有腫大要想到可能是哪些地方回流有問題", "lvl": 0, "step": true}, {"t": "img", "src": "img/p149.jpg", "w": 900, "h": 522, "dw": 452}, {"t": "p", "text": "(1)Level 1：口咽", "lvl": 2, "step": false}, {"t": "p", "text": "(2)Level 2/3/4/5：口咽、鼻咽、下咽", "lvl": 2, "step": false}, {"t": "p", "text": "(3)Level 6：喉部、甲狀腺", "lvl": 2, "step": false}, {"t": "p", "text": "(4)耳旁：頭皮", "lvl": 2, "step": false}, {"t": "p", "text": "2. 腋下LN分布：infraclavicular(鎖骨下), axillary(腋下), epitrochlear(肘後)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p150.jpg", "w": 900, "h": 429, "dw": 446}, {"t": "p", "text": "(1)肘窩：看遠端肢體是否正常", "lvl": 2, "step": false}, {"t": "p", "text": "(2)腋下：上肢、上胸腔、乳房", "lvl": 2, "step": false}, {"t": "p", "text": "3. 腹股溝LN分布-horizontal node group(水平區)；vertical node group(垂直區)", "lvl": 0, "step": true}, {"t": "img", "src": "img/p151.jpg", "w": 900, "h": 673, "dw": 452}, {"t": "p", "text": "(1)Vertical：下肢遠端", "lvl": 2, "step": false}, {"t": "p", "text": "(2)Horizontal：下腹部、生殖器、泌尿道", "lvl": 2, "step": false}, {"t": "p", "text": "4. 一些特別的位置", "lvl": 0, "step": true}, {"t": "p", "text": "(1)右鎖骨上淋巴結腫大：Cancer in mediastinum, lungs, esophagus", "lvl": 2, "step": false}, {"t": "p", "text": "(2)左鎖骨上淋巴結腫大(Virchow’s node)：maybe related to cancer of testes,ovaries, kidneys, pancreas, prostate, stomach or gallbladder", "lvl": 2, "step": false}, {"t": "p", "text": "a. 55% metastasis and 20% acute and chronic inflammation and infection", "lvl": 4, "step": false}, {"t": "p", "text": "b. 10% lymphoma or leukemia", "lvl": 4, "step": false}, {"t": "p", "text": "(3)Para-umbilical node (Sister Joseph's node) may be a sign of an abdominal or pelvic neoplasm", "lvl": 2, "step": false}, {"t": "p", "text": "5. LN異常臨床意義-小孩-發燒與上呼吸道感染、bronchial cleft cyst or thyroglossal cyst、白血病與淋巴癌。Young-單核球症候群、甲狀腺癌、鼻咽癌、淋巴癌、愛滋相關；old(40歲以上)-比較可能是癌症", "lvl": 0, "step": true}, {"t": "p", "text": "Flow chart", "lvl": 0, "step": false}, {"t": "img", "src": "img/p152.jpg", "w": 900, "h": 863, "dw": 452}, {"t": "p", "text": "Algorithm for evaluating lymphadenopathy. (ANA = antinuclear antibody; CBC = complete blood count; HBsAg = hepatitis B surface antigen; HIV = human immunodeficienty virus; PPD = purified protein derivative; RPR = rapid plasma reagin.)", "lvl": 0, "step": false}, {"t": "p", "text": "Adapted with permission from Bazemore AW, Smucker DR. Lymphadenopathy and malignancy.Am Fam Physician. 2002;66(11):2109.", "lvl": 0, "step": false}, {"t": "img", "src": "img/p153.jpg", "w": 900, "h": 650, "dw": 452}]}, {"id": "breast", "zh": "乳房", "en": "Breast", "signs": [{"g": ["視診", "Inspection"], "items": [["Asymmetry", "兩側不對稱"], ["Surgical scar", "手術疤痕"], ["Ulcer", "潰瘍傷口"], ["Nipple discharge", "乳頭分泌物"]]}, {"g": ["觸診", "Palpation"], "items": [["Breast mass", "乳房腫塊"], ["Tenderness", "壓痛"], ["Axillary lymphadenopathy", "腋下淋巴結腫大"], ["Infraclavicular lymphadenopathy", "鎖骨下淋巴結腫大"]]}], "blocks": [{"t": "p", "text": "1. 先跟病人自我介紹一下我是誰，然後要做甚麼", "lvl": 0, "step": true}, {"t": "p", "text": "「小姐你好，我是林醫師，等一下幫你做乳房檢查，請問您是否同意？」", "lvl": 1, "step": false}, {"t": "p", "text": "2. 注意病人隱私，異性要請護理人員陪同", "lvl": 0, "step": true}, {"t": "p", "text": "動作：拉簾子", "lvl": 1, "step": false}, {"t": "p", "text": "3. 問診確認危險因子", "lvl": 0, "step": true}, {"t": "p", "text": "「請問家人有無得過乳癌？有無接受過乳房手術？有沒有服用過女性賀爾蒙？」", "lvl": 1, "step": false}, {"t": "p", "text": "「乳頭是否有發現硬塊？會不會痛？有無分泌物？」", "lvl": 1, "step": false}, {"t": "p", "text": "4. 洗手戴手套", "lvl": 0, "step": true}, {"t": "p", "text": "「首先檢查前先做洗手、戴手套，把手擦乾，先生等一下手可能會有點冰冷，請忍耐一下」", "lvl": 1, "step": false}, {"t": "p", "text": "5. 請患者做出適合乳房檢查的姿勢", "lvl": 0, "step": true}, {"t": "p", "text": "「小姐請幫我平躺，把手放在後腦勺」", "lvl": 1, "step": false}, {"t": "img", "src": "img/p114.jpg", "w": 399, "h": 267, "dw": 182}, {"t": "p", "text": "6. 視診：", "lvl": 0, "step": true}, {"t": "p", "text": "(1)兩側乳房有無對稱？", "lvl": 2, "step": false}, {"t": "p", "text": "(2)有無開過刀", "lvl": 2, "step": false}, {"t": "p", "text": "(3)有無潰瘍傷口", "lvl": 2, "step": false}, {"t": "p", "text": "(4)乳頭有無分泌物", "lvl": 2, "step": false}, {"t": "p", "text": "7. 觸診手法", "lvl": 0, "step": true}, {"t": "p", "text": "(1)手勢為二三四指併攏、靠指腹做檢查，因為指腹較為敏感", "lvl": 2, "step": false}, {"t": "p", "text": "(2)若病人有告知病灶位置，優先觸診該處，看大小、可否移動、", "lvl": 2, "step": false}, {"t": "p", "text": "(3)沿著乳房做順時鐘 or 逆時鐘的按壓檢查", "lvl": 2, "step": false}, {"t": "p", "text": "(4)以乳頭為中心，由內慢慢往外擴", "lvl": 2, "step": false}, {"t": "img", "src": "img/p115.jpg", "w": 407, "h": 239, "dw": 185}, {"t": "p", "text": "8. 觸診步驟", "lvl": 0, "step": true}, {"t": "p", "text": "(1)第一圈輕壓，看患者會不會痛與尋找表淺腫瘤", "lvl": 2, "step": false}, {"t": "p", "text": "(2)第二圈重壓，感受深層腫瘤", "lvl": 2, "step": false}, {"t": "p", "text": "(3)做完兩圈摸腋下淋巴結(如下左圖)、鎖骨下淋巴結(如右下圖)，看有無腫大", "lvl": 2, "step": false}, {"t": "img", "src": "img/p116.jpg", "w": 367, "h": 242, "dw": 167}, {"t": "img", "src": "img/p117.jpg", "w": 351, "h": 242, "dw": 160}, {"t": "p", "text": "(4)若病人告知乳頭有分泌物，在做完上述檢查後要掐乳頭看分泌物之顏色以及從哪個象限流出來的(可從單一方向往乳頭做推壓看分泌物有無增多來判斷)", "lvl": 2, "step": false}, {"t": "p", "text": "9. 完成觸診後，幫病人衣服拉上，並告知觸診結果", "lvl": 0, "step": true}, {"t": "p", "text": "＊重要知識", "lvl": 0, "step": false}, {"t": "p", "text": "1. 乳房檢查最適合時機為月經後3-5日，若為停經婦女可每月固定一天檢查", "lvl": 0, "step": true}, {"t": "p", "text": "2. 乳癌高危險因子", "lvl": 0, "step": true}, {"t": "p", "text": "(1)一側乳房曾罹患過乳癌者，另一側乳房罹患的機會相對增加", "lvl": 2, "step": false}, {"t": "p", "text": "(2)家屬有乳癌者，尤其是母親、姐妹或家屬中有男性得乳癌者", "lvl": 2, "step": false}, {"t": "p", "text": "(3)初經來得早(12歲以前)或停經較晚(55歲以後)者", "lvl": 2, "step": false}, {"t": "p", "text": "(4)三十歲以後生第一胎或未曾生育者", "lvl": 2, "step": false}, {"t": "p", "text": "(5)偏好高脂肪食物者", "lvl": 2, "step": false}, {"t": "p", "text": "(6)血液中有乳癌基因(BRCA)者", "lvl": 2, "step": false}, {"t": "p", "text": "(7)胸部曾做過放射線治療者", "lvl": 2, "step": false}, {"t": "p", "text": "(8)賀爾蒙服用病史(雌性激素)", "lvl": 2, "step": false}, {"t": "img", "src": "img/p118.jpg", "w": 900, "h": 615, "dw": 452}]}, {"id": "inguinal", "zh": "腹股溝與男性生殖系統", "en": "Inguinal & Male genitalia", "signs": [{"g": ["腹股溝", "Inguinal"], "items": [["Inguinal bulge", "鼠蹊部突起"], ["Cough impulse", "咳嗽衝擊感"], ["Reducible hernia", "可回納疝氣"], ["Irreducible hernia", "不可回納疝氣"], ["Indirect inguinal hernia", "間接型疝氣"], ["Direct inguinal hernia", "直接型疝氣"], ["Femoral hernia", "股疝氣"], ["Inguinal lymphadenopathy", "鼠蹊部淋巴結腫大"]]}, {"g": ["男性生殖器", "Male genitalia"], "items": [["Abnormal secondary sexual characteristics", "第二性徵發育異常"], ["Phimosis", "包莖"], ["Hypospadias", "尿道下裂"], ["Penile mass / lesion", "陰莖腫塊或病灶"], ["Hydrocele (transillumination positive)", "陰囊水腫"], ["Varicocele", "精索靜脈曲張"], ["Testicular mass / asymmetry", "睪丸腫塊或不對稱"], ["Scrotal tenderness", "陰囊壓痛"]]}], "blocks": [{"t": "p", "text": "一、背景知識", "lvl": 0, "step": false}, {"t": "p", "text": "1. Inguinal Hernia（腹股溝疝氣）", "lvl": 0, "step": true}, {"t": "p", "text": "1) Commonest external hernia", "lvl": 2, "step": false}, {"t": "p", "text": "2) Male preponderance", "lvl": 2, "step": false}, {"t": "p", "text": "3) Infant / adult（嬰兒先天多 / 成人後天多）", "lvl": 2, "step": false}, {"t": "p", "text": "4) Direct / indirect / combined (pantaloon)", "lvl": 2, "step": false}, {"t": "p", "text": "5) Weakness / increased pressure", "lvl": 2, "step": false}, {"t": "p", "text": "6) Cause pain / discomfort", "lvl": 2, "step": false}, {"t": "p", "text": "7) Carry risk of complications", "lvl": 2, "step": false}, {"t": "p", "text": "8) Treated surgically", "lvl": 2, "step": false}, {"t": "p", "text": "2. Inguinal Hernia - History（腹股溝疝氣的病史）", "lvl": 0, "step": true}, {"t": "p", "text": "1) Onset", "lvl": 2, "step": false}, {"t": "p", "text": "2) Duration", "lvl": 2, "step": false}, {"t": "p", "text": "3) Symptoms", "lvl": 2, "step": false}, {"t": "p", "text": "4) Other hernia(e)", "lvl": 2, "step": false}, {"t": "p", "text": "5) Irreducibility", "lvl": 2, "step": false}, {"t": "p", "text": "6) Gastrointestinal system 肚子脹?有沒有發燒?大便、放屁?", "lvl": 2, "step": false}, {"t": "p", "text": "7) Respiratory system 有沒有肝硬化、COPD, asthma(喘用腹式呼吸)，因為容易腹壓高，造成腹股溝疝氣", "lvl": 2, "step": false}, {"t": "p", "text": "8) Surgery / anaesthesia 開過刀併發症、受過傷、感染過？", "lvl": 2, "step": false}, {"t": "p", "text": "3. Inguinal Hernia - Examination（腹股溝疝氣的檢查）", "lvl": 0, "step": true}, {"t": "p", "text": "1) Standing / Lying Supine 請病人站著並脫褲子到膝蓋上緣，比較雙側鼠蹊部", "lvl": 2, "step": false}, {"t": "p", "text": "2) Cough impulse 手指從鼠蹊管一直摸到外環，並請病人咳嗽，間接型疝氣會抵著指尖、指腹，會隨著咳嗽震動", "lvl": 2, "step": false}, {"t": "p", "text": "3) Reducibility", "lvl": 2, "step": false}, {"t": "p", "text": "4) Contents", "lvl": 2, "step": false}, {"t": "p", "text": "5) Bowel sounds 6小時內可能聽到腸音，至少聽30秒", "lvl": 2, "step": false}, {"t": "p", "text": "6) Scrotal contents 用手電筒照陰囊是為了排除陰囊水腫，摸睪丸像蟲可能是精索靜脈曲張", "lvl": 2, "step": false}, {"t": "p", "text": "4. Differential（鑑別診斷）", "lvl": 0, "step": true}, {"t": "p", "text": "1) Direct / Indirect / Combined 用手指摸進去腹股溝管鑑別", "lvl": 2, "step": false}, {"t": "p", "text": "2) Femoral hernia  inguinal ligment以下就是femoral hernia", "lvl": 2, "step": false}, {"t": "p", "text": "3) Hydrocele", "lvl": 2, "step": false}, {"t": "p", "text": "4) Lipoma Lipoma一定要用超音波，摸起來可能軟軟的不會縮進去，但也可能是硬的，專一性比較低", "lvl": 2, "step": false}, {"t": "p", "text": "5) Lymph node 通常是一串，但有時候會融合成一個特別大，但往上往下摸還是有其他顆淋巴結", "lvl": 2, "step": false}, {"t": "p", "text": "6) Testicular tumour 睪丸大小不對稱", "lvl": 2, "step": false}, {"t": "p", "text": "7) Saphenous varix 摸起來像蟲袋，袋子裡有軟軟的管子", "lvl": 2, "step": false}, {"t": "p", "text": "5. Hesselbach's Triangle（海式三角）", "lvl": 0, "step": true}, {"t": "img", "src": "img/p127.jpg", "w": 503, "h": 370, "dw": 229}, {"t": "p", "text": "6. Direct vs. Indirect（直接疝氣與間接疝氣的比較）", "lvl": 0, "step": true}, {"t": "p", "text": "鼠蹊疝氣在三角形內就是direct；在internal deep ring 就是indirect，比較容易掉到睪丸。", "lvl": 0, "step": false}, {"t": "img", "src": "img/p128.jpg", "w": 900, "h": 310, "dw": 452}, {"t": "p", "text": "二、腹股溝檢查步驟", "lvl": 0, "step": false}, {"t": "p", "text": "1. 洗手，保持雙手清潔。", "lvl": 0, "step": true}, {"t": "p", "text": "2. 準備並戴上手套，確保檢查過程中衛生。", "lvl": 0, "step": true}, {"t": "p", "text": "3. 自我介紹，確認病人的身份後，向病人解釋檢查流程，請病人站立並露出腹股溝部位，把褲子脫到膝蓋。如果是女性病人，應有護理師在旁陪同。", "lvl": 0, "step": true}, {"t": "p", "text": "4. 視診，先觀察是否有明顯的突起或腫塊，並讓病人咳嗽或憋氣，增加腹腔壓力，觀察腫塊是否變得更明顯。", "lvl": 0, "step": true}, {"t": "p", "text": "5. 進行檢查，用一隻手的食指輕輕進入病人腹股溝管，沿著精索往裡面推，然後再次讓病人咳嗽或憋氣，感覺指尖或指腹是否有突起物的推擠感，來判斷是否有疝氣。", "lvl": 0, "step": true}, {"t": "p", "text": "6. 如果確認有疝氣，接著詢問病史，排除其他可能的鑑別診斷，並根據身體檢查判斷是直接疝氣還是間接疝氣。", "lvl": 0, "step": true}, {"t": "img", "src": "img/p129.jpg", "w": 223, "h": 253, "dw": 154}, {"t": "img", "src": "img/p130.jpg", "w": 385, "h": 216, "dw": 280}, {"t": "img", "src": "img/p131.jpg", "w": 702, "h": 598, "dw": 452}, {"t": "p", "text": "三、男性生殖系统的檢查 (應為同一站接續做)", "lvl": 0, "step": false}, {"t": "p", "text": "1. 洗手、戴上手套，自我介紹後確認病人的身份，並向病人解釋這次檢查的目的。", "lvl": 0, "step": true}, {"t": "p", "text": "2. 分辨生殖器官之第二性徵發育。", "lvl": 0, "step": true}, {"t": "p", "text": "1) 隨着青春期的來臨和性荷爾蒙水平的上升，睪丸酮直接導致陰莖的成長、肌肉的大小和質量增加，喉結變大，聲音變的沙啞低沉。骨架變得寬大，身體脂肪量減少。", "lvl": 2, "step": false}, {"t": "p", "text": "2) 男性生殖器官第二性徵：", "lvl": 2, "step": false}, {"t": "p", "text": "a. 男性化陰毛生長及其分布狀況", "lvl": 4, "step": false}, {"t": "p", "text": "b. 陰莖外觀與發育", "lvl": 4, "step": false}, {"t": "p", "text": "c. 陰囊發育", "lvl": 4, "step": false}, {"t": "p", "text": "d. 睪丸發育", "lvl": 4, "step": false}, {"t": "p", "text": "3. 檢查皮膚、龜頭及尿道口，同時診斷是否有包莖的情況：", "lvl": 0, "step": true}, {"t": "p", "text": "1) 讓病人站立並脫下下體衣物，若是女性醫師進行檢查，應有護理人員陪同。", "lvl": 2, "step": false}, {"t": "p", "text": "2) 操作者戴上外科口罩和檢診手套。", "lvl": 2, "step": false}, {"t": "p", "text": "3) 把被陰毛遮住的部位掀開來觀察，看有無不正常的突起或腫塊。", "lvl": 2, "step": false}, {"t": "p", "text": "4) 將包皮輕輕翻到最底端，如果包皮開口過緊，無法翻出龜頭或翻出時感到疼痛，則可能是包莖。", "lvl": 2, "step": false}, {"t": "p", "text": "5) 仔細檢查尿道口的大小和位置，並觀察龜頭、陰莖及周圍皮膚是否有異常或病變。", "lvl": 2, "step": false}, {"t": "p", "text": "6) 如果尿道口開口偏下，則可能是尿道下裂。", "lvl": 2, "step": false}, {"t": "p", "text": "7) 輕輕擠壓陰莖檢查是否有不正常的腫塊。", "lvl": 2, "step": false}, {"t": "p", "text": "8) 檢查完後，記得將病人的包皮推回原位。", "lvl": 2, "step": false}, {"t": "p", "text": "4. 進行陰囊（睪丸、副睪、輸精管）的觸診，並檢查是否有靜脈曲張：", "lvl": 0, "step": true}, {"t": "p", "text": "1) 讓病人站立並脫下下體衣物，如果是女性醫師進行檢查，應有男護理人員陪同。", "lvl": 2, "step": false}, {"t": "p", "text": "2) 先視診，接著觸診陰囊和睪丸，仔細觸壓雙側睪丸、副睪、輸精管以及鼠蹊部淋巴結，檢查大小、硬度是否正常、對稱，以及是否有不正常的腫塊或壓痛。", "lvl": 2, "step": false}, {"t": "p", "text": "3) 如果懷疑性病，淋巴結可能會腫大。", "lvl": 2, "step": false}, {"t": "p", "text": "4) 請病人吸氣後憋氣並用力向下腹擠壓，當腹壓增加時，檢查陰囊上方是否有彎曲鼓脹的血管，這可能是靜脈曲張的徵象。", "lvl": 2, "step": false}, {"t": "p", "text": "5. 檢查過程能注意病人隱私及感受。", "lvl": 0, "step": true}, {"t": "p", "text": "1) 與病人作病情說明及溝通，或於執行觸診診療行為及徵詢病人同意之過程中，均應考量到環境及個人隱私之保護。", "lvl": 2, "step": false}, {"t": "p", "text": "2) 病人就診時，應確實隔離其他不相關人員在場；於診療過程，如需錄音或錄影，應先徵得醫病雙方之同意。", "lvl": 2, "step": false}, {"t": "p", "text": "3) 門診診間及諮詢會談場所應為單診間，且有適當之隔音；診間入口並應有門隔開，且對於診間之設計，應有具體確保病人隱私之設施。", "lvl": 2, "step": false}, {"t": "p", "text": "4) 進行檢查及處置之場所，應至少有布簾隔開（且視檢查及處置之種類，以有個人房間較為理想），檢查台亦應備有被單、治療巾等，對於較私密部位之檢查，並應有避免過度暴露之措施。", "lvl": 2, "step": false}, {"t": "p", "text": "5) 診療過程，對於特殊檢查及處置，應依病人及處置之需要，安排適當人員陪同，且有合適之醫事人員在場，並於檢查及處置過程中隨時觀察、注意隱私之維護。", "lvl": 2, "step": false}, {"t": "p", "text": "6) 對實（見）習學生在旁，應事先充分告知病人；為考量病人隱私，對於較私密部位之檢查，應徵得病人之同意。", "lvl": 2, "step": false}, {"t": "img", "src": "img/p132.jpg", "w": 702, "h": 433, "dw": 452}]}, {"id": "dre", "zh": "直腸指診", "en": "Digital rectal examination", "signs": [{"g": ["直腸指診", "DRE"], "items": [["Perianal lesion", "肛門周圍病灶"], ["Decreased sphincter tone", "括約肌張力下降"], ["Rectal mass", "直腸腫塊"], ["Prostate enlargement", "前列腺肥大"], ["Hard / nodular prostate", "前列腺堅硬或結節"], ["Prostate tenderness", "前列腺壓痛"], ["Bright red blood", "鮮紅色血漬"], ["Dark red blood", "深紅色血漬"], ["Black stool (melena)", "黑便"]]}], "blocks": [{"t": "p", "text": "1. 解釋檢查目的及程序，以獲得病患同意", "lvl": 0, "step": true}, {"t": "img", "src": "img/p133.jpg", "w": 344, "h": 197, "dw": 157}, {"t": "p", "text": "2. 異性患者需有和患者相同性別之醫護人員共同參與", "lvl": 0, "step": true}, {"t": "p", "text": "3. 確保環境隱私", "lvl": 0, "step": true}, {"t": "p", "text": "4. 準備病人位置，朝左側躺，膝蓋彎曲，並將褲子及內褲脫至膝蓋", "lvl": 0, "step": true}, {"t": "p", "text": "5. 洗手及戴上手套", "lvl": 0, "step": true}, {"t": "p", "text": "6. 描述肛門及周圍地區外觀", "lvl": 0, "step": true}, {"t": "p", "text": "「肛門周圍很乾淨，沒有肉眼可見的皮膚病灶，觸摸肛門周圍沒發現特別病灶」", "lvl": 1, "step": false}, {"t": "p", "text": "7. 提醒病患指診將開始後將手指用Jelly潤滑，進入前告知患者，接著滑順的將食指插入肛門。", "lvl": 0, "step": true}, {"t": "p", "text": "「我現在手指要伸進去了，可能會脹脹的忍耐一下」", "lvl": 1, "step": false}, {"t": "p", "text": "8. 感受肛門括約肌收縮力", "lvl": 0, "step": true}, {"t": "p", "text": "9. 觸摸肛門與直腸，並 360 度觸摸檢查", "lvl": 0, "step": true}, {"t": "p", "text": "「摸360度，在前方摸到前列腺，後方摸到尾椎，稍微勾一下有一條帶狀物為肛門口括約肌」", "lvl": 1, "step": false}, {"t": "p", "text": "10.檢查前列腺硬度、大小", "lvl": 0, "step": true}, {"t": "p", "text": "「前列腺大小正常，軟硬適中」*正常：寬/高/厚度 為 4/3/2", "lvl": 1, "step": false}, {"t": "p", "text": "11.若有異常位置，檢查軟硬度，移動性，大小，及是否有壓痛", "lvl": 0, "step": true}, {"t": "p", "text": "「沒有特別摸到異常腫塊，也沒有發現壓痛點」", "lvl": 1, "step": false}, {"t": "p", "text": "12.將移出手指並檢查血漬 與 糞便顏色", "lvl": 0, "step": true}, {"t": "p", "text": "「移出手指沒有發現血漬與糞便」（如果題目說有發現就改一下）", "lvl": 1, "step": false}, {"t": "p", "text": "*血漬：紅色(肛門口急性出血)、深紅色(慢性出血)", "lvl": 1, "step": false}, {"t": "p", "text": "*糞便：黑色(Upper GI bleeding)、咖啡色(便秘)、綠色(腹瀉膽汁來不及吸收)", "lvl": 1, "step": false}, {"t": "p", "text": "13.協助清潔肛門及穿好衣物。", "lvl": 0, "step": true}, {"t": "p", "text": "「用衛生紙幫忙病人清潔肛門口，並請患者穿好衣物」", "lvl": 1, "step": false}, {"t": "p", "text": "14.和病人解釋病情（自由發揮）", "lvl": 0, "step": true}, {"t": "img", "src": "img/p134.jpg", "w": 684, "h": 542, "dw": 311}]}, {"id": "ns", "zh": "神外 OSCE：頸椎神經根", "en": "Neurosurgery OSCE: Cervical radiculopathy", "signs": [{"g": ["肌力與反射", "Power & Reflexes"], "items": [["Shoulder abduction weakness (C5)", "肩外展無力"], ["Elbow flexion weakness (C6)", "肘屈曲無力"], ["Elbow extension weakness (C7)", "肘伸展無力"], ["Abnormal biceps reflex", "肱二頭肌反射異常"], ["Abnormal brachioradialis reflex", "肱橈肌反射異常"]]}, {"g": ["特殊檢查", "Special tests"], "items": [["Hoffmann's sign positive", "霍夫曼徵象陽性"], ["Babinski sign positive", "巴賓斯基徵象陽性"], ["Lhermitte's sign positive", "萊爾米特徵象陽性"], ["Spurling sign positive", "Spurling 試驗陽性"], ["Shoulder abduction relief sign positive", "肩外展緩解試驗陽性"]]}], "blocks": [{"t": "p", "text": "Scene: 病人因左肩、左上臂疼痛於神外/神內就診", "lvl": 0, "step": false}, {"t": "p", "text": "1. 自我介紹：自我介紹、確認病人身分", "lvl": 0, "step": true}, {"t": "p", "text": "2. Sensory: 問診 LQQOPERA", "lvl": 0, "step": true}, {"t": "p", "text": "L: location 位置-疼痛的位置？", "lvl": 1, "step": false}, {"t": "p", "text": "Q: quality 性質-請問可以具體形容是何種痛嗎，是間斷的抽痛、刺痛還是持續的隱隱作痛？", "lvl": 1, "step": false}, {"t": "p", "text": "Q: quantity 量、程度、發作持續時間-請問這個痛持續了多久？疼痛的程度如果您感受過最痛為10分，不會痛為0分，請問這大概是幾分痛？以前有沒有感受過這種痛？O: onset mode 開始時的方式-請問當時是突然就很痛還是慢慢越來越痛這樣痛起來？", "lvl": 1, "step": false}, {"t": "p", "text": "P: precipitating factors 誘發因素-請問當時開始痛的時候有正在做什麼事情可能導致誘發它嗎？有覺得常常是因為在做什麼事情誘發這個疼痛嗎？", "lvl": 1, "step": false}, {"t": "p", "text": "E: exaggerating factors 加劇因素-請問有什麼情況會讓這個疼痛加劇嗎？", "lvl": 1, "step": false}, {"t": "p", "text": "R: relieving factors 減緩因素-請問有什麼情況會讓這個疼痛減緩嗎？", "lvl": 1, "step": false}, {"t": "p", "text": "A: accompanying symptoms 伴隨症狀-請問除了肩膀的疼痛外，全身還有哪些這個疼痛伴隨而來的症狀嗎？", "lvl": 1, "step": false}, {"t": "p", "text": "3. Motion: muscle power，肩膀上提、手臂外展/內收、前臂屈曲/伸展", "lvl": 0, "step": true}, {"t": "p", "text": "＊肌力(power)：兩側要互相比較，從近側端到遠側端", "lvl": 1, "step": false}, {"t": "p", "text": "(1)肩部肌力：請患者雙手伸直朝兩側舉高90度 ，我們用手雙手對稱下壓他的上臂，若他撐不住就是C5出問題（負責外展的）。我們用手雙手對稱上抬他的上臂，若他撐不住就是C6, 7出問題（負責內收的）。", "lvl": 2, "step": false}, {"t": "p", "text": "(2)手肘肌力：患者呈現以下姿勢測試他手肘extension, flexion的肌力有無異常（手肘的是我們推或拉看他抵抗的力道夠不夠）", "lvl": 2, "step": false}, {"t": "img", "src": "img/p154.jpg", "w": 232, "h": 163, "dw": 106}, {"t": "p", "text": "4. Reflex", "lvl": 0, "step": true}, {"t": "p", "text": "(1)肱二頭肌：扣診槌尖端敲擊肌腱", "lvl": 2, "step": false}, {"t": "p", "text": "*肌反射(deep tendon reflex)：叩診錘用尖部敲打，做完一隻手後做另一邊來互相比較", "lvl": 3, "step": false}, {"t": "p", "text": "-", "lvl": 4, "step": false}, {"t": "p", "text": "bicep tendon: 大拇指要摸到患者肘窩的bicep tendon，確認患者有完全放鬆，再用扣診錘敲打，若沒有收縮的現象即為C5C6出問題。", "lvl": 4, "step": false}, {"t": "img", "src": "img/p155.jpg", "w": 283, "h": 179, "dw": 129}, {"t": "p", "text": "(2)肱橈肌：扣診槌平端敲擊肌腱", "lvl": 2, "step": false}, {"t": "p", "text": "-", "lvl": 4, "step": false}, {"t": "p", "text": "肱橈肌(brachioradialis): 要敲擊的tendon在wrist上方約10公分處", "lvl": 4, "step": false}, {"t": "img", "src": "img/p156.jpg", "w": 268, "h": 164, "dw": 122}, {"t": "img", "src": "img/p157.jpg", "w": 278, "h": 168, "dw": 127}, {"t": "p", "text": "5. Hoffman’s sign ：", "lvl": 0, "step": true}, {"t": "p", "text": "請病人放輕鬆，以下面圖片的姿勢，壓彈患者的中指。再來觀察個案食指與拇指有無向內屈曲收縮。如果有代表病患的第8頸椎到第1腰椎有神經病變。", "lvl": 1, "step": false}, {"t": "img", "src": "img/p158.jpg", "w": 275, "h": 194, "dw": 125}, {"t": "img", "src": "img/p159.jpg", "w": 339, "h": 193, "dw": 154}, {"t": "img", "src": "img/p160.jpg", "w": 272, "h": 139, "dw": 124}, {"t": "p", "text": "<--positive", "lvl": 4, "step": false}, {"t": "p", "text": "6. Babinski sign", "lvl": 0, "step": true}, {"t": "p", "text": "7. Lhermitte sign (預設: 5. 6. 7. positive, upper motor neuron lesion)", "lvl": 0, "step": true}, {"t": "p", "text": "請病人頸部屈曲即可", "lvl": 1, "step": false}, {"t": "img", "src": "img/p161.jpg", "w": 584, "h": 290, "dw": 266}, {"t": "img", "src": "img/p162.jpg", "w": 600, "h": 309, "dw": 340}, {"t": "p", "text": "C5肩膀外展(三角肌)、C6肘屈曲(二頭)、C7肘外展(三頭)", "lvl": 1, "step": false}, {"t": "p", "text": "8. Spurling sign", "lvl": 0, "step": true}, {"t": "p", "text": "請患者的頸部伸展，然後將他的頭側彎到和手痛的同一側，並且給予axial", "lvl": 1, "step": false}, {"t": "p", "text": "compression(應該就是垂直下壓，如下圖)，若患者感到患側上肢麻木則為陽性", "lvl": 1, "step": false}, {"t": "p", "text": "*原理：壓迫脊神經孔， 或增加脊神經根張力造成症狀", "lvl": 1, "step": false}, {"t": "img", "src": "img/p163.jpg", "w": 298, "h": 184, "dw": 136}, {"t": "img", "src": "img/p164.jpg", "w": 125, "h": 173, "dw": 57}, {"t": "p", "text": "9. Shoulder abd (預設: 8. 9. negative, C1-C7 root compression)", "lvl": 0, "step": true}, {"t": "p", "text": "請患者患側的手放在頭並放鬆，如果這樣可以緩解他的radicular pain，那就是positive", "lvl": 1, "step": false}, {"t": "img", "src": "img/p165.jpg", "w": 605, "h": 308, "dw": 275}, {"t": "p", "text": "＊ C1-C2損傷會引起症狀，包括神經刺激、椎體麻痺功能不全（大腦後部血流不足）以及相關的眩暈、耳鳴、頭暈、面部疼痛、手臂疼痛和偏頭痛。 這種不同的症狀可能會使慢性頸部疼痛成為診斷和治療的挑戰。 ”", "lvl": 1, "step": false}, {"t": "p", "text": "C3神經的壓迫可能會導致吞嚥和言語困難。", "lvl": 1, "step": false}, {"t": "p", "text": "C4神經的壓迫會導致呼吸問題，因為神經是幫助控制橫膈膜運動的神經之一（與橫膈神經一起）。", "lvl": 1, "step": false}, {"t": "p", "text": "C5肩膀外展(三角肌)、C6肘屈曲(二頭)、C7肘外展(三頭)", "lvl": 1, "step": false}, {"t": "img", "src": "img/p166.jpg", "w": 859, "h": 311, "dw": 391}, {"t": "img", "src": "img/p167.jpg", "w": 589, "h": 435, "dw": 268}]}];
+const KEY = "admission-checklist-v2";
+
+const PI = [
+  ["L","位置","Location"],["Q","性質","Quality"],["Q","量／頻率","Quantity / Frequency"],["O","開始","Onset"],
+  ["P","誘發","Provoking"],["E","加劇","Exacerbating"],["R","減緩","Relieving"],["A","伴隨","Associated symptoms"],
+  ["","發作時間","Timing"],["","相關治療","Treatment"],["","演變","Course"]
+];
+const PMH_MED = [["HTN","高血壓"],["DM","糖尿病"],["MI","心肌梗塞"],["Stroke","中風"],["PUD","消化性潰瘍"],["Asthma","氣喘"],
+  ["Liver disease","肝臟疾病"],["Kidney disease","腎臟疾病"],["Recent health check-up","近期健康檢查"]];
+const HABITS = [["alcohol","Alcohol drinking","飲酒"],["smoking","Smoking","吸菸"],["betel","Betel nuts","檳榔"]];
+const PSH = [["religion","宗教","Religion"],["travel","旅遊","Travel"],["occupation","職業","Occupation"],["contact","接觸史","Contact history"],["cluster","群聚史","Cluster history"]];
+const ROS = [
+  {id:"gen",t:["全身狀況","General conditions"],items:[["Fever","發燒"],["Chills","寒顫"],["Change of appetite","食慾改變"],["Fatigue","疲倦"],["Body weight loss","體重減輕"]]},
+  {id:"hent",t:["頭、眼、耳、鼻、喉","Head, Eye, Ear, Nose, Throat"],items:[["Headache","頭痛"],["Dizziness","頭暈"],["Blurred vision","視力模糊"],["Tinnitus","耳鳴"],["Nasal bleeding","鼻出血"],["Nasal discharge","流鼻涕"],["Gum bleeding","牙齦出血"],["Oral ulcer","口腔潰瘍"],["Throat ache","喉嚨痛"]]},
+  {id:"resp",t:["呼吸系統","Respiratory"],items:[["Cough","咳嗽"],["Sputum","痰"],["Hemoptysis","咳血"],["Dyspnea","呼吸困難"],["Chest tightness","胸悶"],["Chest pain","胸痛"]]},
+  {id:"cv",t:["心血管系統","Cardiovascular"],items:[["Palpitation","心悸"],["Arrhythmia","心律不整"],["Orthopnea","端坐呼吸"],["Paroxysmal nocturnal dyspnea","夜間陣發性呼吸困難"],["Dyspnea on exertion","運動時呼吸困難"]]},
+  {id:"gi",t:["腸胃系統","Gastrointestinal"],items:[["Nausea","噁心"],["Vomiting","嘔吐"],["Dysphagia","吞嚥困難"],["Heartburn","胃灼熱"],["Flatulence","脹氣"],["Abdominal pain","腹痛"],["Diarrhea","腹瀉"],["Constipation","便秘"],["Stool shape & color change","大便形狀或顏色改變"],["Melena","黑便"],["Hematochezia","血便"]]},
+  {id:"uro",t:["泌尿道","Urinary tract"],items:[["Frequency","尿頻"],["Urgency","尿急"],["Proteinuria","蛋白尿"],["Dysuria","排尿疼痛"],["Oliguria","少尿"],["Hematuria","血尿"],["Nocturia","夜尿"],["Incontinence","尿失禁"]]},
+  {id:"gen2",t:["生殖系統","Genital"],items:[["STD (sexually transmitted disease) history","性傳染病病史"],["Testicular pain","睪丸疼痛"],["Masses","腫塊"],["Hernias","疝氣"]]},
+  {id:"ext",t:["四肢","EXT"],items:[["Muscle atrophy","肌肉萎縮"],["Involuntary movement","不自主運動"],["Joint swelling","關節腫脹"],["Arthralgia","關節痛"]]},
+  {id:"skin",t:["皮膚","Skin"],items:[["Pruritus","搔癢"],["Rash","皮疹"],["Macule","斑疹"],["Ulcer","潰瘍"],["Petechiae","點狀出血"],["Ecchymosis","瘀斑"]]},
+  {id:"mental",t:["精神狀態","Mental status"],items:[["Anxiety","焦慮"],["Depression","憂鬱"],["Memory loss","記憶力減退"]]},
+  {id:"neuro",t:["神經精神","Neuropsychiatric"],items:[["Numbness","麻木"],["Syncope","暈厥"],["Paralysis","癱瘓"],["Seizure","癲癇"]]}
+];
+const VITALS = [["bt","體溫","BT","°C"],["bp","血壓","BP","mmHg"],["pr","心跳","PR","次/分"],["rr","呼吸","RR","次/分"],["bw","體重","BW","Kg"],["ht","身高","Ht","Cm"]];
+const PE_GENERAL = [["ga","一般外觀","General appearance"],["conscious","意識","Conscious"],["mentality","心智狀態","Mentality"]];
+const DX = [["HTN","高血壓"],["DM","糖尿病"],["Hyperlipidemia","高血脂"],["CAD","冠心病"],["Stroke","中風"],["Cancer","癌症"],["CKD","慢性腎病"],["Asthma","氣喘"],["COPD","慢阻肺"],["Liver disease","肝病"],["Thyroid disease","甲狀腺疾病"],["Gout","痛風"]];
+
+/* ---------- state ---------- */
+function blankFT() {
+  return { sex: "M", mar: "married", sel: "pt", seq: 0, sibs: [], kids: [], nodes: {
+    pgf: {rel:"爺爺", sex:"M"}, pgm: {rel:"奶奶", sex:"F"}, mgf: {rel:"外公", sex:"M"}, mgm: {rel:"外婆", sex:"F"},
+    fa: {rel:"父親", sex:"M"}, mo: {rel:"母親", sex:"F"}, pt: {rel:"病人", sex:"M"}, sp: {rel:"配偶", sex:"F"}
+  }};
+}
+function blank() { return { f: {}, rows: { op: [], hosp: [] }, ft: blankFT(), pe: [] }; }
+let S = blank();
+try {
+  const raw = JSON.parse(localStorage.getItem(KEY) || "null");
+  if (raw && raw.f) S = Object.assign(blank(), raw);
+} catch (e) {}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = id => document.getElementById(id);
+const check = (id, en, zh) => `<label class="item"><input type="checkbox" id="${id}"><span class="txt"><span class="e">${esc(en)}</span><span class="z">${esc(zh)}</span></span></label>`;
+const textField = (id, zh, en) => `<label class="field"><span class="lbl"><b>${esc(zh)}</b> <i>${esc(en)}</i></span><input type="text" id="${id}"></label>`;
+
+/* apply saved values to any element with an id inside a container */
+function applySaved(root) {
+  root.querySelectorAll("input[id], textarea[id]").forEach(el => {
+    if (el.dataset.nosave !== undefined || !(el.id in S.f)) return;
+    if (el.type === "checkbox") el.checked = !!S.f[el.id]; else el.value = S.f[el.id];
+  });
+}
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (!el.id || el.dataset.nosave !== undefined || el.dataset.row !== undefined) return;
+  if (el.type === "checkbox") return;
+  S.f[el.id] = el.value; save();
+});
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (el.type !== "checkbox" || !el.id || el.dataset.nosave !== undefined) return;
+  S.f[el.id] = el.checked; save();
+  const panel = el.closest(".pe-panel"); if (panel) updatePeProg(panel);
+});
+
+/* ---------- static sections ---------- */
+$("pi-fields").innerHTML = PI.map((r, i) => textField("pi" + i, (r[0] ? r[0] + " " : "") + r[1], r[2])).join("");
+$("pmh-med").innerHTML = PMH_MED.map((r, i) => check("pmh_med" + i, r[0], r[1])).join("");
+$("psh-habits").innerHTML = HABITS.map(r => check("psh_" + r[0], r[1], r[2])).join("");
+$("psh-fields").innerHTML = PSH.map(r => textField("psh_" + r[0], r[1], r[2])).join("");
+$("ros-groups").innerHTML = ROS.map(g => `<div class="group"><h3>${esc(g.t[0])} <span class="en">${esc(g.t[1])}</span></h3>
+  <div class="grid">${g.items.map((it, i) => check(`ros_${g.id}_${i}`, it[0], it[1])).join("")}</div></div>`).join("");
+$("vitals").innerHTML = VITALS.map(v => `<label class="field"><span class="lbl"><b>${v[1]}</b> <i>${v[2]} (${v[3]})</i></span><input type="text" id="v_${v[0]}" inputmode="decimal"></label>`).join("");
+$("pe-general").innerHTML = PE_GENERAL.map(r => textField("pe_" + r[0], r[1], r[2])).join("");
+
+/* ---------- repeatable rows ---------- */
+const ROWPH = { op: ["2024/05", "例：Appendectomy（急性闌尾炎）"], hosp: ["2023/11", "例：Pneumonia 住院 7 天"] };
+function renderRows(kind) {
+  const list = S.rows[kind];
+  if (!list.length) list.push(["", ""]);
+  $("rows-" + kind).innerHTML = list.map((r, i) => `<div class="row">
+    <input type="text" data-row="${kind}" data-i="${i}" data-k="0" value="${esc(r[0])}" placeholder="${ROWPH[kind][0]}" aria-label="時間">
+    <input type="text" data-row="${kind}" data-i="${i}" data-k="1" value="${esc(r[1])}" placeholder="${ROWPH[kind][1]}" aria-label="內容">
+    <button type="button" data-delrow="${kind}" data-i="${i}" aria-label="刪除此列">✕</button></div>`).join("");
+}
+document.addEventListener("input", e => {
+  const el = e.target; if (el.dataset.row === undefined) return;
+  S.rows[el.dataset.row][+el.dataset.i][+el.dataset.k] = el.value; save();
+});
+document.addEventListener("click", e => {
+  const add = e.target.closest("[data-addrow]");
+  if (add) { const k = add.dataset.addrow; S.rows[k].push(["", ""]); renderRows(k); save();
+    const ins = $("rows-" + k).querySelectorAll("input"); ins[ins.length - 2].focus(); return; }
+  const del = e.target.closest("[data-delrow]");
+  if (del) { const k = del.dataset.delrow; S.rows[k].splice(+del.dataset.i, 1); renderRows(k); save(); }
+});
+
+/* ---------- family tree ---------- */
+const W = 112, ROWH = 150, R = 17, TOP = 40;
+function ftLayout() {
+  const ft = S.ft, pos = {};
+  const showSp = ft.mar !== "single";
+  const sibship = [...ft.sibs.slice(0, Math.ceil(ft.sibs.length / 2)), "pt", ...ft.sibs.slice(Math.ceil(ft.sibs.length / 2))];
+  // keep patient at the right of siblings so the spouse sits beside the patient
+  const order = [...ft.sibs, "pt"];
+  order.forEach((id, i) => pos[id] = [i * W, TOP + 2 * ROWH]);
+  const ptx = pos.pt[0];
+  if (showSp) pos.sp = [ptx + W, TOP + 2 * ROWH];
+  const mid = (pos[order[0]][0] + ptx) / 2;
+  pos.fa = [mid - W, TOP + ROWH]; pos.mo = [mid + W, TOP + ROWH];
+  pos.pgf = [pos.fa[0] - W / 2, TOP]; pos.pgm = [pos.fa[0] + W / 2, TOP];
+  pos.mgf = [pos.mo[0] - W / 2, TOP]; pos.mgm = [pos.mo[0] + W / 2, TOP];
+  const cm = showSp ? ptx + W / 2 : ptx;
+  const n = ft.kids.length;
+  ft.kids.forEach((id, i) => pos[id] = [cm + (i - (n - 1) / 2) * W, TOP + 3 * ROWH]);
+  let minX = Infinity, maxX = -Infinity;
+  Object.values(pos).forEach(p => { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); });
+  const off = W / 2 + 20 - minX;
+  Object.values(pos).forEach(p => p[0] += off);
+  return { pos, width: maxX - minX + W + 40, height: TOP + 3 * ROWH + (n ? 120 : -20), showSp, order };
+}
+function wrapDx(list) {
+  const lines = [];
+  list.forEach(d => { const s = String(d); for (let i = 0; i < s.length; i += 12) lines.push(s.slice(i, i + 12)); });
+  return lines.length > 4 ? [...lines.slice(0, 3), "…"] : lines;
+}
+function renderFT() {
+  const ft = S.ft, L = ftLayout(), P = L.pos;
+  const nodeIds = Object.keys(P);
+  let g = "";
+  const line = (x1, y1, x2, y2) => `<path class="ln" d="M${x1} ${y1}L${x2} ${y2}"/>`;
+  // marriage lines + descent
+  const couple = (a, b, kids, divorced) => {
+    const y = P[a][1], x1 = P[a][0] + R, x2 = P[b][0] - R;
+    let s = line(x1, y, x2, y);
+    if (divorced) { const mx = (x1 + x2) / 2; s += `<path class="slash" d="M${mx - 6} ${y + 8}L${mx - 1} ${y - 8}M${mx + 1} ${y + 8}L${mx + 6} ${y - 8}"/>`; }
+    if (kids.length) {
+      const mx = (P[a][0] + P[b][0]) / 2, bar = P[kids[0]][1] - R - 26;
+      s += line(mx, y, mx, bar);
+      const xs = kids.map(k => P[k][0]);
+      s += line(Math.min(mx, ...xs), bar, Math.max(mx, ...xs), bar);
+      kids.forEach(k => s += line(P[k][0], bar, P[k][0], P[k][1] - R));
+    }
+    return s;
+  };
+  g += couple("pgf", "pgm", ["fa"], false);
+  g += couple("mgf", "mgm", ["mo"], false);
+  g += couple("fa", "mo", L.order, false);
+  if (L.showSp) g += couple("pt", "sp", ft.kids, ft.mar === "divorced");
+  else if (ft.kids.length) {
+    const x = P.pt[0], bar = P[ft.kids[0]][1] - R - 26, xs = ft.kids.map(k => P[k][0]);
+    g += line(x, P.pt[1] + R + 54, x, bar) + line(Math.min(x, ...xs), bar, Math.max(x, ...xs), bar);
+    ft.kids.forEach(k => g += line(P[k][0], bar, P[k][0], P[k][1] - R));
+  }
+  // nodes
+  nodeIds.forEach(id => {
+    const n = ft.nodes[id], [x, y] = P[id], dx = n.dx || [];
+    const aff = dx.length ? " aff" : "";
+    const shape = n.sex === "F"
+      ? `<circle class="sym${aff}" cx="${x}" cy="${y}" r="${R}"/>`
+      : `<rect class="sym${aff}" x="${x - R}" y="${y - R}" width="${2 * R}" height="${2 * R}"/>`;
+    const dead = n.dead ? `<path class="slash" d="M${x - R - 6} ${y + R + 6}L${x + R + 6} ${y - R - 6}"/>` : "";
+    let t = `<text class="rel" x="${x}" y="${y + R + 16}" text-anchor="middle">${esc(n.rel)}</text>`;
+    let ty = y + R + 30;
+    if (n.age) { t += `<text class="age" x="${x}" y="${ty}" text-anchor="middle">${esc(n.age)}</text>`; ty += 14; }
+    wrapDx(dx).forEach(l => { t += `<text class="dx" x="${x}" y="${ty}" text-anchor="middle">${esc(l)}</text>`; ty += 13; });
+    let arrow = "";
+    if (id === "pt") arrow = `<path class="arrow" d="M${x - R - 26} ${y + R + 14}L${x - R - 6} ${y + R - 4}"/><path class="arrowhead" d="M${x - R - 3} ${y + R - 7}l-9 2l5 5z"/><text class="pt-lab" x="${x - R - 30}" y="${y + R + 26}" text-anchor="middle">P</text>`;
+    g += `<g class="node${ft.sel === id ? " sel" : ""}" data-node="${id}" tabindex="0" role="button" aria-label="${esc(n.rel)}">${shape}${dead}${t}${arrow}</g>`;
+  });
+  const svg = $("ftSvg");
+  svg.setAttribute("viewBox", `0 0 ${L.width} ${L.height}`);
+  svg.setAttribute("width", L.width); svg.setAttribute("height", L.height);
+  svg.style.width = `max(100%, ${Math.round(L.width * 0.62)}px)`;
+  svg.style.maxWidth = L.width + "px"; svg.style.height = "auto";
+  svg.innerHTML = g;
+  document.querySelectorAll("#ftSex button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === ft.sex)));
+  document.querySelectorAll("#ftMar button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === ft.mar)));
+  renderFTEdit(); renderFTSummary();
+}
+function renderFTEdit() {
+  const ft = S.ft, id = ft.sel in ft.nodes && (id => id !== "sp" || ft.mar !== "single")(ft.sel) ? ft.sel : "pt";
+  ft.sel = id;
+  const n = ft.nodes[id], dx = n.dx || [];
+  const removable = ft.sibs.includes(id) || ft.kids.includes(id);
+  const sexEditable = !["pgf","pgm","mgf","mgm","fa","mo","pt"].includes(id);
+  $("ftEdit").innerHTML = `
+    <h4><span>編輯：${esc(n.rel)}</span>${removable ? `<button type="button" class="danger" id="ftDel">移除此成員</button>` : ""}</h4>
+    <div class="fields">
+      <label class="field"><span class="lbl"><b>稱謂</b> <i>Relation</i></span><input type="text" id="ftRel" data-nosave value="${esc(n.rel)}"></label>
+      <label class="field"><span class="lbl"><b>年齡／死因</b> <i>Age / Cause of death</i></span><input type="text" id="ftAge" data-nosave value="${esc(n.age || "")}" placeholder="例：72y 或 d. 80y MI"></label>
+    </div>
+    <div class="inline" style="margin-top:10px">
+      ${sexEditable ? `<span class="seg" id="ftNodeSex"><button type="button" data-v="M" aria-pressed="${n.sex === "M"}">男</button><button type="button" data-v="F" aria-pressed="${n.sex === "F"}">女</button></span>` : ""}
+      ${id !== "pt" ? `<label class="item" style="padding:0"><input type="checkbox" id="ftDead" data-nosave ${n.dead ? "checked" : ""}><span class="txt"><span class="e">已歿 Deceased</span></span></label>` : ""}
+    </div>
+    <div class="lbl" style="margin-top:12px"><b>病史</b> <i>點選常見疾病，或輸入其他疾病後按「加入」</i></div>
+    <div class="chips">${DX.map(d => `<button type="button" class="chip" data-dx="${esc(d[0])}" aria-pressed="${dx.includes(d[0])}">${esc(d[0])} ${esc(d[1])}</button>`).join("")}</div>
+    <div class="inline" style="margin-top:8px"><input type="text" id="ftDxIn" data-nosave placeholder="例：Breast cancer、Parkinsonism"><button type="button" id="ftDxAdd">加入</button></div>
+    <div class="dxlist">${dx.map((d, i) => `<span>${esc(d)}<button type="button" data-dxdel="${i}" aria-label="移除 ${esc(d)}">✕</button></span>`).join("")}</div>`;
+}
+function renderFTSummary() {
+  const ft = S.ft, P = ftLayout().pos;
+  const rows = Object.keys(P).map(id => ft.nodes[id]).filter(n => (n.dx && n.dx.length) || n.dead);
+  $("ftSummary").innerHTML = rows.length
+    ? `<table><tr><th>成員</th><th>病史</th><th>狀態</th></tr>${rows.map(n => `<tr><td>${esc(n.rel)}</td><td>${esc((n.dx || []).join("、") || "—")}</td><td>${n.dead ? "已歿" : ""} ${esc(n.age || "")}</td></tr>`).join("")}</table>`
+    : `<p class="note">尚未標記任何家族病史。點選家族樹中的成員即可加入。</p>`;
+}
+function ftNew(sex, kind) {
+  const ft = S.ft, id = kind + (++ft.seq);
+  const rel = kind === "s" ? (sex === "M" ? "兄弟" : "姊妹") : (sex === "M" ? "兒子" : "女兒");
+  ft.nodes[id] = { rel, sex };
+  (kind === "s" ? ft.sibs : ft.kids).push(id);
+  ft.sel = id; renderFT(); save();
+}
+$("s-fh").addEventListener("click", e => {
+  const ft = S.ft;
+  const node = e.target.closest("[data-node]");
+  if (node) { ft.sel = node.dataset.node; renderFT(); save(); return; }
+  const add = e.target.closest("[data-add]");
+  if (add) { const [k, s] = add.dataset.add.split("-"); ftNew(s, k === "sib" ? "s" : "c"); return; }
+  const sx = e.target.closest("#ftSex button");
+  if (sx) { ft.sex = sx.dataset.v; ft.nodes.pt.sex = ft.sex; ft.nodes.sp.sex = ft.sex === "M" ? "F" : "M"; renderFT(); save(); return; }
+  const mr = e.target.closest("#ftMar button");
+  if (mr) { ft.mar = mr.dataset.v; renderFT(); save(); return; }
+  const ns = e.target.closest("#ftNodeSex button");
+  if (ns) { ft.nodes[ft.sel].sex = ns.dataset.v; renderFT(); save(); return; }
+  const chip = e.target.closest("[data-dx]");
+  if (chip) { const n = ft.nodes[ft.sel]; n.dx = n.dx || []; const v = chip.dataset.dx, i = n.dx.indexOf(v);
+    if (i >= 0) n.dx.splice(i, 1); else n.dx.push(v); renderFT(); save(); return; }
+  if (e.target.id === "ftDxAdd") { addFreeDx(); return; }
+  const dd = e.target.closest("[data-dxdel]");
+  if (dd) { ft.nodes[ft.sel].dx.splice(+dd.dataset.dxdel, 1); renderFT(); save(); return; }
+  if (e.target.id === "ftDel") {
+    const id = ft.sel; ft.sibs = ft.sibs.filter(x => x !== id); ft.kids = ft.kids.filter(x => x !== id);
+    delete ft.nodes[id]; ft.sel = "pt"; renderFT(); save();
+  }
+});
+function addFreeDx() {
+  const inp = $("ftDxIn"), v = inp.value.trim(); if (!v) return;
+  const n = S.ft.nodes[S.ft.sel]; n.dx = n.dx || [];
+  v.split(/[,，、]/).map(s => s.trim()).filter(Boolean).forEach(s => { if (!n.dx.includes(s)) n.dx.push(s); });
+  renderFT(); save(); $("ftDxIn").focus();
+}
+$("s-fh").addEventListener("keydown", e => {
+  if (e.target.id === "ftDxIn" && e.key === "Enter") { e.preventDefault(); addFreeDx(); }
+  const node = e.target.closest && e.target.closest("[data-node]");
+  if (node && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); S.ft.sel = node.dataset.node; renderFT(); save(); }
+});
+$("s-fh").addEventListener("input", e => {
+  const n = S.ft.nodes[S.ft.sel]; if (!n) return;
+  if (e.target.id === "ftRel") { n.rel = e.target.value; refreshFTGraphic(); }
+  if (e.target.id === "ftAge") { n.age = e.target.value; refreshFTGraphic(); }
+});
+$("s-fh").addEventListener("change", e => {
+  if (e.target.id === "ftDead") { S.ft.nodes[S.ft.sel].dead = e.target.checked; refreshFTGraphic(); }
+});
+/* redraw the tree without rebuilding the editor, so typing keeps focus */
+function refreshFTGraphic() {
+  const keep = $("ftEdit").innerHTML;
+  const focusId = document.activeElement && document.activeElement.id;
+  const caret = document.activeElement && document.activeElement.selectionStart;
+  renderFT();
+  if (focusId) { const el = $(focusId); if (el) { el.focus(); try { el.setSelectionRange(caret, caret); } catch (e) {} } }
+  save();
+}
+
+/* ---------- PE selector and panels ---------- */
+$("pePick").innerHTML = PE.map(p => `<button type="button" class="chip" data-pe="${p.id}" aria-pressed="false">${esc(p.zh)}<small>${esc(p.en)}</small></button>`).join("");
+function peBlocks(p) {
+  let html = "", gal = [], si = 0;
+  const flushGal = () => { if (gal.length) { html += `<div class="gallery">${gal.join("")}</div>`; gal = []; } };
+  p.blocks.forEach(b => {
+    if (b.t === "img") {
+      const w = Math.round(Math.min(b.dw * 1.35, 520));
+      gal.push(`<img src="${b.src}" width="${w}" height="${Math.round(w * b.h / b.w)}" loading="lazy" alt="${esc(p.zh)} 示意圖">`);
+      return;
+    }
+    flushGal();
+    if (b.step) {
+      html += `<label class="step"><input type="checkbox" id="pes_${p.id}_${si++}"><span>${esc(b.text)}</span></label>`;
+    } else {
+      html += `<p style="padding-left:${Math.max(0, b.lvl) * 1.1 + 1.5}em">${esc(b.text)}</p>`;
+    }
+  });
+  flushGal();
+  return html;
+}
+function renderPE() {
+  document.querySelectorAll("#pePick .chip").forEach(c => c.setAttribute("aria-pressed", String(S.pe.includes(c.dataset.pe))));
+  const host = $("pePanels");
+  const want = PE.filter(p => S.pe.includes(p.id));
+  // remove panels no longer selected
+  host.querySelectorAll(".pe-panel").forEach(el => { if (!S.pe.includes(el.dataset.id)) el.remove(); });
+  if (!want.length) {
+    if (!host.querySelector(".empty-pe")) host.innerHTML = `<div class="empty-pe">選擇上方一個或多個檢查項目，這裡會出現對應的檢查步驟、圖示與 sign checklist。</div>`;
+    return;
+  }
+  const empty = host.querySelector(".empty-pe"); if (empty) empty.remove();
+  // insert missing panels in selector order
+  want.forEach((p, idx) => {
+    let el = host.querySelector(`.pe-panel[data-id="${p.id}"]`);
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "pe-panel"; el.dataset.id = p.id;
+      el.innerHTML = `
+        <div class="pe-head"><h3>${esc(p.zh)} <span class="en">${esc(p.en)}</span></h3><span class="prog"></span></div>
+        <div class="pe-body">
+          <details class="steps" open><summary>檢查步驟 <span class="en">Procedure</span></summary><div class="pe-text">${peBlocks(p)}</div></details>
+          <div class="sub-h">Sign checklist <span class="en">勾選陽性發現</span></div>
+          <div class="signs">${p.signs.map((g, gi) => `<div class="group"><h3>${esc(g.g[0])} <span class="en">${esc(g.g[1])}</span></h3>
+            <div class="grid">${g.items.map((it, i) => check(`pesg_${p.id}_${gi}_${i}`, it[0], it[1])).join("")}</div></div>`).join("")}</div>
+          <label class="field" style="margin-top:12px"><span class="lbl"><b>發現與描述</b> <i>Findings</i></span><textarea id="pef_${p.id}" rows="3"></textarea></label>
+        </div>`;
+      applySaved(el);
+      updatePeProg(el);
+    }
+    const panels = [...host.querySelectorAll(".pe-panel")];
+    if (panels[idx] !== el) host.insertBefore(el, panels[idx] || null);
+  });
+}
+function updatePeProg(panel) {
+  const steps = panel.querySelectorAll(".step input"), signs = panel.querySelectorAll(".signs input");
+  const done = [...steps].filter(x => x.checked).length, pos = [...signs].filter(x => x.checked).length;
+  panel.querySelector(".prog").textContent = `步驟 ${done} / ${steps.length}　陽性 sign ${pos}`;
+}
+$("pePick").addEventListener("click", e => {
+  const c = e.target.closest("[data-pe]"); if (!c) return;
+  const id = c.dataset.pe, i = S.pe.indexOf(id);
+  if (i >= 0) S.pe.splice(i, 1); else S.pe.push(id);
+  renderPE(); save();
+});
+$("pePanels").addEventListener("click", e => {
+  if (e.target.tagName !== "IMG") return;
+  const lb = document.createElement("div"); lb.className = "lightbox"; lb.setAttribute("role", "dialog"); lb.setAttribute("aria-label", "放大圖片");
+  lb.innerHTML = `<img src="${e.target.getAttribute("src")}" alt="${esc(e.target.alt)}">`;
+  lb.addEventListener("click", () => lb.remove());
+  document.body.appendChild(lb);
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".lightbox").forEach(l => l.remove()); });
+
+/* ---------- reset ---------- */
+const resetBtn = $("reset"); let armed = false, armT;
+resetBtn.addEventListener("click", () => {
+  if (!armed) { armed = true; resetBtn.textContent = "再按一次以確認清除"; armT = setTimeout(() => { armed = false; resetBtn.textContent = "清除所有內容"; }, 4000); return; }
+  clearTimeout(armT); armed = false; resetBtn.textContent = "清除所有內容";
+  S = blank(); try { localStorage.removeItem(KEY); } catch (e) {}
+  document.querySelectorAll(".wrap input[type=text], .wrap textarea").forEach(el => { if (el.dataset.row === undefined) el.value = ""; });
+  document.querySelectorAll(".wrap input[type=checkbox]").forEach(el => el.checked = false);
+  $("pePanels").innerHTML = "";
+  init();
+});
+
+
+/* ---------- PDF export (browser print → Save as PDF) ---------- */
+function preparePrint() {
+  document.querySelectorAll(".print-val").forEach(el => el.remove());
+  document.querySelectorAll(".wrap input[type=text], .wrap textarea").forEach(el => {
+    if (el.closest(".ft-edit")) return;
+    const v = document.createElement("div"); v.className = "print-val"; v.textContent = el.value || " ";
+    el.insertAdjacentElement("afterend", v);
+  });
+  document.querySelectorAll("details.steps").forEach(d => d.open = true);
+  const n = [$("pt_name").value, $("pt_chart").value].filter(Boolean).join("_");
+  document.title = n ? `入院紀錄_${n}` : "入院紀錄";
+}
+window.addEventListener("beforeprint", preparePrint);
+window.addEventListener("afterprint", () => { document.title = "入院紀錄檢查表"; });
+$("pdfBtn").addEventListener("click", () => {
+  const embedded = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+  if (embedded) {
+    const m = $("pdfMsg");
+    m.textContent = "這個預覽視窗無法開啟列印。請改用下載的 HTML 檔，在瀏覽器開啟後再按「輸出 PDF」。";
+    m.hidden = false; return;
+  }
+  preparePrint();
+  window.print();
+});
+
+function init() {
+  applySaved(document);
+  renderRows("op"); renderRows("hosp");
+  renderFT(); renderPE();
+}
+init();
+</script>
+</body></html>
