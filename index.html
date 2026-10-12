@@ -1,32 +1,23 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>入院紀錄檢查表</title><meta name="description" content="互動式入院紀錄檢查表：家族樹、中英對照 ROS、身體檢查步驟、輸出 PDF"></head><body>
-<style>
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#F5F0E8"><meta name="robots" content="noindex"><meta name="description" content="互動式入院紀錄檢查表：家族樹、中英對照 ROS、身體檢查步驟、輸出 PDF"><title>入院紀錄檢查表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&display=swap">
+</head><body><style>
 [hidden] { display: none !important; }
 /* Layout: one column of section cards under a sticky section nav; checklists wrap into grids; PE panels appear per selected exam. */
 :root {
-  --bg: #f3f5f4;
-  --fg: #1c2b2c;
-  --accent: #2d6e69;
-  --accent-ink: #ffffff;
-  --muted: #5f7171;
-  --line: #d3dcdb;
-  --card: #ffffff;
-  --mark: #e6efee;
-  --affected: #2d6e69;
-  --warn: #b0543a;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #101817; --fg: #e2ebe9; --accent: #7ec3ba; --accent-ink: #0d1514;
-    --muted: #94a7a5; --line: #2a3a39; --card: #162120; --mark: #1d2c2b;
-    --affected: #7ec3ba; --warn: #e39a7f;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #101817; --fg: #e2ebe9; --accent: #7ec3ba; --accent-ink: #0d1514;
-  --muted: #94a7a5; --line: #2a3a39; --card: #162120; --mark: #1d2c2b;
-  --affected: #7ec3ba; --warn: #e39a7f;
-  color-scheme: dark;
+  /* Claude-style single light theme: ivory paper, warm ink, terracotta accent */
+  --bg: #F5F0E8;
+  --fg: #3D3929;
+  --accent: #C15F3C;
+  --accent-bright: #D97757;
+  --accent-ink: #FFFFFF;
+  --muted: #7A7363;
+  --line: #E6DCCD;
+  --card: #FFFDF9;
+  --mark: #F7E7DD;
+  --affected: #D97757;
+  --warn: #A8452A;
+  --serif: "Noto Serif TC", "Songti TC", "PMingLiU", Georgia, serif;
+  color-scheme: light;
 }
 body {
   background: var(--bg);
@@ -38,9 +29,23 @@ body {
 .wrap { max-width: 920px; margin: 0 auto; padding-block: 0 48px; padding-inline: 16px; }
 header.top {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  background: var(--bg); padding-block: 12px 8px; border-bottom: 1px solid var(--line);
+  background: var(--bg); padding-block: 12px 8px; border-bottom: 2px solid var(--accent-bright);
 }
-h1 { font-size: 1.3rem; margin: 0; text-wrap: balance; }
+.card h2 .en, .card h2 .tag { font-family: "Noto Sans TC", "PingFang TC", system-ui, sans-serif; letter-spacing: 0; }
+.nav a { color: var(--fg); }
+.item input[type="checkbox"], .step input[type="checkbox"], .check input { accent-color: var(--accent-bright); }
+.pe-head { background: var(--mark) !important; }
+/* header shown only in PDF / print */
+#pdfHead { display: none; }
+html.pdf-mode #pdfHead { display: block; }
+#pdfHead .band { background: var(--accent-bright); color: #fff; border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+#pdfHead .band b { font-family: var(--serif); font-size: 22px; letter-spacing: .04em; }
+#pdfHead .band span { font-size: 12px; opacity: .9; }
+#pdfHead .meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+#pdfHead .meta div { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+#pdfHead .meta i { display: block; font-style: normal; font-size: 11px; color: var(--muted); }
+#pdfHead .meta b { font-size: 14px; }
+h1 { font-family: var(--serif); font-size: 1.35rem; font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: .02em; }
 h1 small { font-size: .82rem; color: var(--muted); font-weight: 400; margin-left: 6px; }
 .nav { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; padding-bottom: 2px; scrollbar-width: thin; }
 .nav a {
@@ -62,7 +67,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   background: var(--card); border: 1px solid var(--line); border-radius: 10px;
   padding: 18px; margin-top: 16px; scroll-margin-top: 110px;
 }
-.card h2 { font-size: 1.05rem; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.card h2 { font-family: var(--serif); font-weight: 700; font-size: 1.08rem; letter-spacing: .02em; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
 .en { color: var(--muted); font-weight: 400; font-size: .86rem; }
 .tag { font-size: .75rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 6px; align-self: center; }
 .group + .group { margin-top: 14px; }
@@ -163,32 +168,47 @@ details.steps > summary { cursor: pointer; font-weight: 700; font-size: .92rem; 
 .pdf-msg { margin: 6px 0 0; font-size: .82rem; color: var(--warn); }
 .print-val { display: none; }
 @media print {
-  @page { margin: 14mm 12mm; }
-  :root { --bg: #fff; --card: #fff; --fg: #111; --muted: #555; --line: #bbb; --mark: #eee; --accent: #1f5c57; --affected: #444; --warn: #8a3b26; }
-  body { background: #fff; font-size: 11pt; }
+  @page { margin: 12mm 10mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: var(--bg); font-size: 11pt; }
   .wrap { max-width: none; padding: 0; }
-  header.top { position: static; border: 0; padding: 0 0 6px; }
-  .nav, #pdfBtn, .pdf-msg, .ft-bar, .ft-edit, .ft-legend, .pe-pick, .reset-wrap, .rowhead span:last-child, .row button, [data-addrow], .sub-h:has(+ .pe-pick) { display: none !important; }
-  .card { border: 0; border-top: 1.5px solid #888; border-radius: 0; padding: 10px 0 4px; margin-top: 8px; break-inside: auto; }
+  #pdfHead { display: block; margin-bottom: 6px; }
+  header.top, #nojs { display: none !important; }
+  .nav, #pdfBtn, .pdf-msg, .ft-bar, .ft-edit, .ft-legend, .pe-pick, .reset-wrap, .rowhead span:last-child, .row button, [data-addrow], .sub-h:has(+ .pe-pick), #pdfSheet, #s-id { display: none !important; }
+  .card { margin-top: 8px; padding: 12px 14px; break-inside: auto; }
   .card h2 { break-after: avoid; }
   input[type="text"], textarea { display: none !important; }
-  .print-val { display: block; min-height: 1.4em; border-bottom: 1px solid #ccc; padding: 2px 4px; white-space: pre-wrap; font-size: 10.5pt; }
+  .print-val { display: block; min-height: 1.4em; border-bottom: 1px dashed var(--line); padding: 2px 4px; white-space: pre-wrap; font-size: 10.5pt; }
   .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
   .item, .step { break-inside: avoid; }
-  .item:not(:has(input:checked)) .z { color: #777; }
-  .ft-scroll { border: 0; overflow: visible; }
+  .item:not(:has(input:checked)) .z { color: #a39a88; }
+  .item:not(:has(input:checked)) .e { color: #8a8270; }
+  .ft-scroll { border: 0; overflow: visible; background: var(--card); }
   #ftSvg { max-width: 100%; height: auto; }
-  .pe-panel { border: 1px solid #bbb; break-inside: auto; }
+  .pe-panel { break-inside: auto; }
   .gallery img { max-width: 45%; break-inside: avoid; }
   .lightbox { display: none !important; }
 }
+}
 
 /* generated-PDF mode (home-screen web apps cannot print): same look as print */
-html.pdf-mode { --bg: #fff; --card: #fff; --fg: #111; --muted: #555; --line: #bbb; --mark: #eee; --accent: #1f5c57; --affected: #444; --warn: #8a3b26; color-scheme: light; }
-html.pdf-mode body { background: #fff; }
-html.pdf-mode .wrap { width: 760px; max-width: none; padding: 0 0 0 0; margin: 0; }
-html.pdf-mode header.top { position: static; border: 0; padding: 0 0 6px; }
+html.pdf-mode body { background: var(--bg); }
+html.pdf-mode .wrap { width: 760px; max-width: none; padding: 0; margin: 0; }
+html.pdf-mode header.top, html.pdf-mode #nojs, html.pdf-mode #s-id { display: none !important; }
 html.pdf-mode .nav, html.pdf-mode #pdfBtn, html.pdf-mode .pdf-msg, html.pdf-mode .ft-bar, html.pdf-mode .ft-edit, html.pdf-mode .ft-legend, html.pdf-mode .pe-pick, html.pdf-mode .reset-wrap, html.pdf-mode .rowhead span:last-child, html.pdf-mode .row button, html.pdf-mode [data-addrow], html.pdf-mode .sub-h:has(+ .pe-pick), html.pdf-mode #pdfSheet { display: none !important; }
+html.pdf-mode .card { margin-top: 0; padding: 14px 16px; }
+html.pdf-mode input[type="text"], html.pdf-mode textarea { display: none !important; }
+html.pdf-mode .print-val { display: block; min-height: 1.4em; border-bottom: 1px dashed var(--line); padding: 2px 4px; white-space: pre-wrap; font-size: 13px; }
+html.pdf-mode .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.pdf-mode .fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html.pdf-mode .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
+html.pdf-mode .item { padding: 4px 0; }
+html.pdf-mode .item input[type="checkbox"], html.pdf-mode .step input[type="checkbox"] { width: 15px; height: 15px; }
+html.pdf-mode .item:not(:has(input:checked)) .z { color: #a39a88; }
+html.pdf-mode .item:not(:has(input:checked)) .e { color: #8a8270; }
+html.pdf-mode .ft-scroll { border: 0; overflow: visible; background: var(--card); }
+html.pdf-mode .gallery img { max-width: 45%; }
+#pdfSheet { display: none !important; }
 html.pdf-mode .card { border: 0; border-top: 1.5px solid #888; border-radius: 0; padding: 10px 0 4px; margin-top: 8px; }
 html.pdf-mode input[type="text"], html.pdf-mode textarea { display: none !important; }
 html.pdf-mode .print-val { display: block; min-height: 1.4em; border-bottom: 1px solid #ccc; padding: 2px 4px; white-space: pre-wrap; font-size: 13px; }
@@ -252,6 +272,9 @@ html.pdf-mode .gallery img { max-width: 45%; }
   <div id="nojs"><b>這個檢視器沒有執行互動功能</b>LINE、Messenger 或 iPhone「檔案」的預覽畫面不會執行網頁程式，所以無法勾選、畫家族樹。請改用瀏覽器開啟：Android 選「以 Chrome 開啟」；iPhone／iPad 請開啟同學分享的網址，或用電腦開啟此檔案。</div>
 
   
+
+  <div id="pdfHead"><div class="band"><b>入院紀錄 Admission Note</b><span id="pdfDate"></span></div>
+    <div class="meta"><div><i>姓名 Name</i><b id="ph_name">—</b></div><div><i>病歷號 Chart No.</i><b id="ph_chart">—</b></div><div><i>病房號 Ward / Bed</i><b id="ph_ward">—</b></div><div><i>製作日期 Date</i><b id="ph_date">—</b></div></div></div>
 
   <section class="card" id="s-id">
     <h2>病人資料 <span class="en">Patient Information</span></h2>
@@ -763,6 +786,9 @@ function preparePrint() {
     el.insertAdjacentElement("afterend", v);
   });
   document.querySelectorAll("details.steps").forEach(d => d.open = true);
+  const d = new Date(), ds = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+  $("ph_name").textContent = $("pt_name").value || "—"; $("ph_chart").textContent = $("pt_chart").value || "—";
+  $("ph_ward").textContent = $("pt_ward").value || "—"; $("ph_date").textContent = ds; $("pdfDate").textContent = "Generated " + ds;
   const n = [$("pt_name").value, $("pt_chart").value].filter(Boolean).join("_");
   document.title = n ? `入院紀錄_${n}` : "入院紀錄";
 }
@@ -800,22 +826,26 @@ async function buildPDF() {
   try {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
-    const M = 10, PW = 210 - 2 * M, PH = 297 - 2 * M; let y = M;
-    const blocks = [document.querySelector("header.top h1"), ...document.querySelectorAll(".wrap > section.card")];
+    const M = 10, PW = 210 - 2 * M, PH = 297 - 2 * M - 8; let y = M;
+    const paint = () => { doc.setFillColor(245, 240, 232); doc.rect(0, 0, 210, 297, "F"); };
+    paint();
+    const blocks = [$("pdfHead"), ...[...document.querySelectorAll(".wrap > section.card")].filter(x => x.id !== "s-id")];
     for (const el of blocks) {
-      const c = await html2canvas(el, { scale: 1.6, backgroundColor: "#ffffff", windowWidth: 1000, useCORS: true, logging: false });
+      const c = await html2canvas(el, { scale: 1.6, backgroundColor: "#F5F0E8", windowWidth: 1000, useCORS: true, logging: false });
       const mmPerPx = PW / c.width; let off = 0;
       while (off < c.height) {
         const room = (M + PH - y) / mmPerPx;
-        if (room < 60 && y > M) { doc.addPage(); y = M; continue; }
+        if (room < 60 && y > M) { doc.addPage(); paint(); y = M; continue; }
         const h = Math.min(c.height - off, Math.floor(room));
         const part = document.createElement("canvas"); part.width = c.width; part.height = h;
         part.getContext("2d").drawImage(c, 0, off, c.width, h, 0, 0, c.width, h);
         doc.addImage(part.toDataURL("image/jpeg", 0.82), "JPEG", M, y, PW, h * mmPerPx);
-        y += h * mmPerPx + 2; off += h;
-        if (off < c.height) { doc.addPage(); y = M; }
+        y += h * mmPerPx + 4; off += h;
+        if (off < c.height) { doc.addPage(); paint(); y = M; }
       }
     }
+    const n = doc.getNumberOfPages();
+    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(193, 95, 60); doc.text(`${i} / ${n}`, 200, 292, { align: "right" }); doc.setDrawColor(217, 119, 87); doc.setLineWidth(0.4); doc.line(10, 287, 200, 287); }
     const name = (document.title || "入院紀錄") + ".pdf";
     pdfFile = new File([doc.output("blob")], name, { type: "application/pdf" });
   } finally {
