@@ -189,7 +189,6 @@ details.steps > summary { cursor: pointer; font-weight: 700; font-size: .92rem; 
   .gallery img { max-width: 45%; break-inside: avoid; }
   .lightbox { display: none !important; }
 }
-}
 
 /* generated-PDF mode (home-screen web apps cannot print): same look as print */
 html.pdf-mode body { background: var(--bg); }
@@ -207,19 +206,6 @@ html.pdf-mode .item input[type="checkbox"], html.pdf-mode .step input[type="chec
 html.pdf-mode .item:not(:has(input:checked)) .z { color: #a39a88; }
 html.pdf-mode .item:not(:has(input:checked)) .e { color: #8a8270; }
 html.pdf-mode .ft-scroll { border: 0; overflow: visible; background: var(--card); }
-html.pdf-mode .gallery img { max-width: 45%; }
-#pdfSheet { display: none !important; }
-html.pdf-mode .card { border: 0; border-top: 1.5px solid #888; border-radius: 0; padding: 10px 0 4px; margin-top: 8px; }
-html.pdf-mode input[type="text"], html.pdf-mode textarea { display: none !important; }
-html.pdf-mode .print-val { display: block; min-height: 1.4em; border-bottom: 1px solid #ccc; padding: 2px 4px; white-space: pre-wrap; font-size: 13px; }
-html.pdf-mode .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-html.pdf-mode .fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-html.pdf-mode .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
-html.pdf-mode .item { padding: 4px 0; }
-html.pdf-mode .item input[type="checkbox"], html.pdf-mode .step input[type="checkbox"] { width: 15px; height: 15px; }
-html.pdf-mode .item:not(:has(input:checked)) .z { color: #777; }
-html.pdf-mode .ft-scroll { border: 0; overflow: visible; }
-html.pdf-mode #ftSvg { width: auto !important; max-width: 100% !important; }
 html.pdf-mode .gallery img { max-width: 45%; }
 #pdfSheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px rgba(0,0,0,.15); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 #pdfSheet p { margin: 0; font-size: .9rem; flex: 1 1 200px; }
@@ -810,6 +796,7 @@ let pdfFile = null;
 function sheet(msg, canShare) {
   $("pdfSheet").hidden = false; $("pdfSheetMsg").textContent = msg; $("pdfShare").hidden = !canShare;
 }
+function withTimeout(pr, ms) { return Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error("逾時")), ms))]); }
 async function buildPDF() {
   sheet("PDF 製作中，請稍候（約 5–20 秒）…", false);
   await loadScript("lib/html2canvas.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"));
@@ -820,7 +807,9 @@ async function buildPDF() {
   const clone = svg.cloneNode(true); clone.removeAttribute("style"); clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   const ftImg = new Image(); ftImg.id = "ftPdfImg"; ftImg.style.cssText = "display:block;margin:0 auto;max-width:100%;height:auto";
   ftImg.width = +svg.getAttribute("width"); ftImg.height = +svg.getAttribute("height");
-  await new Promise(r => { ftImg.onload = r; ftImg.onerror = r; ftImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone)); });
+  clone.querySelectorAll("*").forEach(el => el.removeAttribute("font-family"));
+  clone.setAttribute("font-family", "PingFang TC, Heiti TC, Microsoft JhengHei, sans-serif");
+  await withTimeout(new Promise(r => { ftImg.onload = r; ftImg.onerror = r; ftImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone)); }), 4000).catch(() => {});
   svg.style.display = "none"; svg.insertAdjacentElement("afterend", ftImg);
   await new Promise(r => setTimeout(r, 120));
   try {
@@ -830,8 +819,11 @@ async function buildPDF() {
     const paint = () => { doc.setFillColor(245, 240, 232); doc.rect(0, 0, 210, 297, "F"); };
     paint();
     const blocks = [$("pdfHead"), ...[...document.querySelectorAll(".wrap > section.card")].filter(x => x.id !== "s-id")];
+    let bi = 0;
     for (const el of blocks) {
-      const c = await html2canvas(el, { scale: 1.6, backgroundColor: "#F5F0E8", windowWidth: 1000, useCORS: true, logging: false });
+      sheet(`PDF 製作中…（${++bi} / ${blocks.length}）`, false);
+      const c = await withTimeout(html2canvas(el, { scale: 1.4, backgroundColor: "#F5F0E8", windowWidth: 1000, useCORS: true, logging: false,
+        onclone: d => { d.querySelectorAll('link[rel="stylesheet"], link[rel="preconnect"]').forEach(l => l.remove()); } }), 30000);
       const mmPerPx = PW / c.width; let off = 0;
       while (off < c.height) {
         const room = (M + PH - y) / mmPerPx;
