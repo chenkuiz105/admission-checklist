@@ -219,7 +219,7 @@ html.pdf-mode .ft-scroll { border: 0; overflow: visible; background: var(--card)
 html.pdf-mode .gallery img { max-width: 45%; }
 #pdfSheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px rgba(0,0,0,.15); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
 #pdfSheet p { margin: 0; font-size: .9rem; flex: 1 1 200px; }
-#pdfSheet .acts { display: flex; gap: 8px; }
+#pdfSheet .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 520px) {
   .row, .rowhead { grid-template-columns: minmax(0, 1fr) auto; }
   .row input:first-child { grid-column: 1 / -1; }
@@ -421,7 +421,7 @@ html.pdf-mode .gallery img { max-width: 45%; }
     </div>
   </section>
 
-  <div id="pdfSheet" hidden="" role="dialog" aria-label="PDF"><p id="pdfSheetMsg">PDF 製作中…</p><div class="acts"><button type="button" class="solid" id="pdfShare" hidden="">分享／儲存 PDF</button><button type="button" id="pdfClose">關閉</button></div></div>
+  <div id="pdfSheet" hidden="" role="dialog" aria-label="PDF"><p id="pdfSheetMsg">PDF 製作中…</p><div class="acts"><button type="button" class="solid" id="pdfShare" hidden="">分享／儲存 PDF</button><button type="button" id="pdfSafari" hidden="">在 Safari 開啟並列印</button><button type="button" id="pdfCopy" hidden="">複製連結</button><button type="button" id="pdfClose">關閉</button></div></div>
   <div class="reset-wrap"><button type="button" class="danger" id="reset">清除所有內容</button></div>
 </div>
 
@@ -470,6 +470,17 @@ try {
   if (raw && raw.f) S = Object.assign(blank(), raw);
 } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+/* data handed over from the home-screen app (see stateURL) */
+let importedFromApp = false;
+(function () {
+  const m = location.hash.match(/^#import=([A-Za-z0-9_-]+)$/); if (!m) return;
+  try {
+    const json = decodeURIComponent(escape(atob(m[1].replace(/-/g, "+").replace(/_/g, "/"))));
+    const raw = JSON.parse(json);
+    if (raw && raw.f) { S = Object.assign(blank(), raw); save(); importedFromApp = true; }
+  } catch (e) {}
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+})();
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $ = id => document.getElementById(id);
@@ -853,50 +864,83 @@ function inlineSvgStyles(svg) {
     ["fill", "stroke", "stroke-width", "font-size", "font-weight", "font-family"].forEach(k => { const v = cs.getPropertyValue(k); if (v) el.setAttribute(k, v); });
   });
 }
-let pdfFile = null;
-function sheet(msg, canShare) {
-  $("pdfSheet").hidden = false; $("pdfSheetMsg").textContent = msg; $("pdfShare").hidden = !canShare;
+let pdfFile = null, pdfStep = "";
+function sheet(msg, canShare, showSafari) {
+  $("pdfSheet").hidden = false; $("pdfSheetMsg").textContent = msg;
+  $("pdfShare").hidden = !canShare; $("pdfSafari").hidden = !showSafari;
 }
-function withTimeout(pr, ms) { return Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error("逾時")), ms))]); }
+function withTimeout(pr, ms, what) { return Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error((what || "") + "逾時")), ms))]); }
+const freeCanvas = c => { try { c.width = 0; c.height = 0; } catch (e) {} };
+/* hand the current form state to Safari through the URL, where window.print() works */
+function stateURL() {
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(S)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return location.origin + location.pathname + "#import=" + b64;
+}
 async function buildPDF() {
-  sheet("PDF 製作中，請稍候（約 5–20 秒）…", false);
-  await loadScript("lib/html2canvas.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"));
-  await loadScript("lib/jspdf.umd.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"));
+  pdfStep = "載入元件";
+  sheet("PDF 製作中，請稍候…", false, false);
+  await withTimeout(loadScript("lib/html2canvas.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js")), 20000, "載入元件");
+  await withTimeout(loadScript("lib/jspdf.umd.min.js").catch(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")), 20000, "載入元件");
+  if (!window.html2canvas || !window.jspdf) throw new Error("PDF 元件沒有載入");
+  pdfStep = "整理頁面";
   preparePrint();
   const root = document.documentElement; root.classList.add("pdf-mode");
+  const scrollBefore = window.scrollY; window.scrollTo(0, 0);
   const svg = $("ftSvg"); inlineSvgStyles(svg);
   const clone = svg.cloneNode(true); clone.removeAttribute("style"); clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  const ftImg = new Image(); ftImg.id = "ftPdfImg"; ftImg.style.cssText = "display:block;margin:0 auto;max-width:100%;height:auto";
-  ftImg.width = +svg.getAttribute("width"); ftImg.height = +svg.getAttribute("height");
   clone.querySelectorAll("*").forEach(el => el.removeAttribute("font-family"));
   clone.setAttribute("font-family", "PingFang TC, Heiti TC, Microsoft JhengHei, sans-serif");
+  const ftImg = new Image(); ftImg.id = "ftPdfImg"; ftImg.style.cssText = "display:block;margin:0 auto;max-width:100%;height:auto";
+  ftImg.width = +svg.getAttribute("width"); ftImg.height = +svg.getAttribute("height");
   await withTimeout(new Promise(r => { ftImg.onload = r; ftImg.onerror = r; ftImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(clone)); }), 4000).catch(() => {});
   svg.style.display = "none"; svg.insertAdjacentElement("afterend", ftImg);
-  await new Promise(r => setTimeout(r, 120));
+  await new Promise(r => setTimeout(r, 150));
+  const failed = [];
   try {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
-    const M = 10, PW = 210 - 2 * M, PH = 297 - 2 * M - 8; let y = M;
+    const M = 10, PW = 210 - 2 * M, PH = 297 - 2 * M - 8;
+    const st = { y: M };
     const paint = () => { doc.setFillColor(245, 240, 232); doc.rect(0, 0, 210, 297, "F"); };
+    const newPage = () => { doc.addPage(); paint(); st.y = M; };
     paint();
     const blocks = [$("pdfHead"), ...[...document.querySelectorAll(".wrap > section.card")].filter(x => x.id !== "s-id")];
+    const onclone = d => { d.querySelectorAll('link[rel="stylesheet"], link[rel="preconnect"]').forEach(l => l.remove()); };
+    // each block is captured in page-sized slices (bounded canvas size: iOS refuses very tall canvases), cut at element edges when possible
     let bi = 0;
     for (const el of blocks) {
-      sheet(`PDF 製作中…（${++bi} / ${blocks.length}）`, false);
-      const c = await withTimeout(html2canvas(el, { scale: 1.4, backgroundColor: "#F5F0E8", windowWidth: 1000, useCORS: true, logging: false,
-        onclone: d => { d.querySelectorAll('link[rel="stylesheet"], link[rel="preconnect"]').forEach(l => l.remove()); } }), 30000);
-      const mmPerPx = PW / c.width; let off = 0;
-      while (off < c.height) {
-        const room = (M + PH - y) / mmPerPx;
-        if (room < 60 && y > M) { doc.addPage(); paint(); y = M; continue; }
-        const h = Math.min(c.height - off, Math.floor(room));
-        const part = document.createElement("canvas"); part.width = c.width; part.height = h;
-        part.getContext("2d").drawImage(c, 0, off, c.width, h, 0, 0, c.width, h);
-        doc.addImage(part.toDataURL("image/jpeg", 0.82), "JPEG", M, y, PW, h * mmPerPx);
-        y += h * mmPerPx + 4; off += h;
-        if (off < c.height) { doc.addPage(); paint(); y = M; }
+      bi++;
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.scrollY, H = Math.ceil(rect.height), cssW = Math.ceil(rect.width);
+      if (!H || !cssW) continue;
+      const mmPerCss = PW / cssW;
+      const cuts = [...el.querySelectorAll("p, label, img, h2, h3, tr, .print-val, .sub-h, .row, .field, .meta, .band, .pe-head, summary, .group, .dxlist")]
+        .map(c => c.getBoundingClientRect().bottom + window.scrollY - top).filter(v => v > 0 && v < H).sort((x, y) => x - y);
+      let off = 0;
+      while (off < H) {
+        let room = (M + PH - st.y) / mmPerCss;
+        if (room < 140 && st.y > M) { newPage(); continue; }
+        let slice = Math.min(H - off, room);
+        if (off + slice < H) { const lim = off + slice, cand = cuts.filter(v => v <= lim && v > off + slice * 0.5).pop(); if (cand) slice = cand - off; }
+        slice = Math.ceil(slice);
+        pdfStep = `擷取第 ${bi} / ${blocks.length} 段`;
+        sheet(`PDF 製作中…（${bi} / ${blocks.length}，第 ${doc.getNumberOfPages()} 頁）`, false, false);
+        let c = null;
+        try {
+          c = await withTimeout(html2canvas(el, { scale: 1.4, backgroundColor: "#F5F0E8", x: 0, y: off, width: cssW, height: slice, scrollX: 0, scrollY: 0, windowWidth: window.innerWidth, windowHeight: window.innerHeight, useCORS: true, logging: false, onclone }), 60000, "擷取畫面");
+          const data = c.toDataURL("image/jpeg", 0.85);
+          if (!data || data.length < 100) throw new Error("畫面擷取為空白");
+          doc.addImage(data, "JPEG", M, st.y, PW, slice * mmPerCss);
+        } catch (e) {
+          failed.push(`${el.id || "block" + bi}: ${e.message || e}`);
+          doc.setFontSize(9); doc.setTextColor(168, 69, 42); doc.text("(this section could not be rendered)", M, st.y + 5);
+          st.y += 8; off = H; continue;
+        } finally { if (c) freeCanvas(c); }
+        st.y += slice * mmPerCss + 4; off += slice;
+        if (off < H) newPage();
       }
     }
+    pdfStep = "輸出檔案";
     const n = doc.getNumberOfPages();
     for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(193, 95, 60); doc.text(`${i} / ${n}`, 200, 292, { align: "right" }); doc.setDrawColor(217, 119, 87); doc.setLineWidth(0.4); doc.line(10, 287, 200, 287); }
     const name = (document.title || "入院紀錄") + ".pdf";
@@ -904,20 +948,32 @@ async function buildPDF() {
   } finally {
     root.classList.remove("pdf-mode"); document.title = "入院紀錄檢查表";
     const fi = $("ftPdfImg"); if (fi) fi.remove(); $("ftSvg").style.display = "";
+    window.scrollTo(0, scrollBefore);
   }
+  const warn = failed.length ? `（有 ${failed.length} 段無法擷取：${failed.join("；")}）` : "";
   const canShare = !!(navigator.canShare && navigator.canShare({ files: [pdfFile] }));
-  if (canShare) sheet("PDF 已完成。按「分享／儲存 PDF」，再選「儲存到檔案」或傳給別人。", true);
+  if (canShare) sheet("PDF 已完成。按「分享／儲存 PDF」，再選「儲存到檔案」或傳給別人。" + warn, true, true);
   else {
     const a = document.createElement("a"); a.href = URL.createObjectURL(pdfFile); a.download = pdfFile.name; document.body.appendChild(a); a.click(); a.remove();
-    sheet("PDF 已下載。", false);
+    sheet("PDF 已下載。" + warn, false, false);
   }
 }
 $("pdfShare").addEventListener("click", async () => {
   if (!pdfFile) return;
   try { await navigator.share({ files: [pdfFile], title: pdfFile.name }); $("pdfSheet").hidden = true; }
-  catch (e) { if (e && e.name !== "AbortError") sheet("無法開啟分享選單：" + (e.message || e.name), true); }
+  catch (e) { if (e && e.name !== "AbortError") sheet("無法開啟分享選單：" + (e.message || e.name) + "。可改按「在 Safari 開啟並列印」。", true, true); }
 });
-$("pdfClose").addEventListener("click", () => { $("pdfSheet").hidden = true; });
+$("pdfSafari").addEventListener("click", () => {
+  const a = document.createElement("a"); a.href = stateURL(); a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
+  $("pdfSheetMsg").textContent = "已在 Safari 開啟同一份資料。在 Safari 中按右上角「輸出 PDF」即可列印或儲存。若沒有自動開啟，請長按下方「複製連結」後貼到 Safari。";
+  $("pdfCopy").hidden = false;
+});
+$("pdfCopy").addEventListener("click", async () => {
+  const u = stateURL();
+  try { await navigator.clipboard.writeText(u); $("pdfCopy").textContent = "已複製"; }
+  catch (e) { const ta = document.createElement("textarea"); ta.value = u; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); $("pdfCopy").textContent = "已複製"; } catch (e2) { $("pdfCopy").textContent = "無法複製"; } ta.remove(); }
+});
+$("pdfClose").addEventListener("click", () => { $("pdfSheet").hidden = true; $("pdfCopy").hidden = true; $("pdfCopy").textContent = "複製連結"; });
 $("pdfBtn").addEventListener("click", async () => {
   const embedded = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
   if (embedded) {
@@ -926,7 +982,11 @@ $("pdfBtn").addEventListener("click", async () => {
     m.hidden = false; return;
   }
   if (isStandalone()) {
-    try { await buildPDF(); } catch (e) { sheet("PDF 製作失敗（" + (e.message || e) + "）。請改用 Safari 開啟網址後按「輸出 PDF」。", false); }
+    try { await buildPDF(); }
+    catch (e) {
+      const d = (e && (e.name ? e.name + ": " : "") + (e.message || String(e))) || "未知錯誤";
+      sheet(`PDF 製作失敗（步驟：${pdfStep}；${d}）。請改按「在 Safari 開啟並列印」。`, false, true);
+    }
     return;
   }
   preparePrint();
@@ -935,6 +995,7 @@ $("pdfBtn").addEventListener("click", async () => {
 
 function init() {
   applySaved(document);
+  if (importedFromApp) { const m = $("pdfMsg"); m.textContent = "已從主畫面 App 匯入這份資料。按右上角「輸出 PDF」即可列印或儲存。"; m.style.color = "var(--accent)"; m.hidden = false; importedFromApp = false; }
   renderRows("op"); renderRows("hosp");
   renderFT(); renderPE();
 }
