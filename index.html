@@ -80,7 +80,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .item .txt { min-width: 0; }
 .item .e { display: block; font-size: .92rem; }
 .item .z { display: block; font-size: .82rem; color: var(--muted); }
-.item:has(input:checked) .e { color: var(--accent); font-weight: 700; }
+.item:has(input:checked) .e, .item.on .e { color: var(--accent); font-weight: 700; }
+.pbox, .ros-pos { display: none; }
 .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 16px; }
 .field { display: block; min-width: 0; }
 .lbl { display: block; font-size: .85rem; margin-bottom: 4px; }
@@ -181,8 +182,13 @@ details.steps > summary { cursor: pointer; font-weight: 700; font-size: .92rem; 
   .print-val { display: block; min-height: 1.4em; border-bottom: 1px dashed var(--line); padding: 2px 4px; white-space: pre-wrap; font-size: 10.5pt; }
   .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
   .item, .step { break-inside: avoid; }
-  .item:not(:has(input:checked)) .z { color: #a39a88; }
-  .item:not(:has(input:checked)) .e { color: #8a8270; }
+  .item input[type="checkbox"], .step input[type="checkbox"] { display: none !important; }
+  .pbox { display: inline-flex !important; flex: none; width: 13px; height: 13px; margin-top: 4px; border: 1.5px solid #9a9280; border-radius: 3px; align-items: center; justify-content: center; font-size: 10px; line-height: 1; font-weight: 700; color: #fff; background: #fff; }
+  .item.on .pbox, .step.on .pbox { background: var(--accent-bright); border-color: var(--accent-bright); }
+  .item:not(.on) .z { color: #a39a88; }
+  .item:not(.on) .e { color: #8a8270; }
+  .step.on span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--accent); }
+  .ros-pos { display: block !important; margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid var(--accent-bright); background: var(--mark); font-size: 10.5pt; }
   .ft-scroll { border: 0; overflow: visible; background: var(--card); }
   #ftSvg { max-width: 100%; height: auto; }
   .pe-panel { break-inside: auto; }
@@ -202,9 +208,13 @@ html.pdf-mode .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 html.pdf-mode .fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 html.pdf-mode .row { grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); }
 html.pdf-mode .item { padding: 4px 0; }
-html.pdf-mode .item input[type="checkbox"], html.pdf-mode .step input[type="checkbox"] { width: 15px; height: 15px; }
-html.pdf-mode .item:not(:has(input:checked)) .z { color: #a39a88; }
-html.pdf-mode .item:not(:has(input:checked)) .e { color: #8a8270; }
+html.pdf-mode .item input[type="checkbox"], html.pdf-mode .step input[type="checkbox"] { display: none !important; }
+html.pdf-mode .pbox { display: inline-flex !important; flex: none; width: 13px; height: 13px; margin-top: 4px; border: 1.5px solid #9a9280; border-radius: 3px; align-items: center; justify-content: center; font-size: 10px; line-height: 1; font-weight: 700; color: #fff; background: #fff; }
+html.pdf-mode .item.on .pbox, html.pdf-mode .step.on .pbox { background: var(--accent-bright); border-color: var(--accent-bright); }
+html.pdf-mode .item:not(.on) .z { color: #a39a88; }
+html.pdf-mode .item:not(.on) .e { color: #8a8270; }
+html.pdf-mode .step.on span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--accent); }
+html.pdf-mode .ros-pos { display: block !important; margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid var(--accent-bright); background: var(--mark); font-size: 13px; }
 html.pdf-mode .ft-scroll { border: 0; overflow: visible; background: var(--card); }
 html.pdf-mode .gallery img { max-width: 45%; }
 #pdfSheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 24px rgba(0,0,0,.15); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
@@ -287,6 +297,7 @@ html.pdf-mode .gallery img { max-width: 45%; }
     <div class="group">
       <h3>內科 <span class="en">Internal medicine</span></h3>
       <div class="grid" id="pmh-med"><label class="item"><input type="checkbox" id="pmh_med0"><span class="txt"><span class="e">HTN</span><span class="z">高血壓</span></span></label><label class="item"><input type="checkbox" id="pmh_med1"><span class="txt"><span class="e">DM</span><span class="z">糖尿病</span></span></label><label class="item"><input type="checkbox" id="pmh_med2"><span class="txt"><span class="e">MI</span><span class="z">心肌梗塞</span></span></label><label class="item"><input type="checkbox" id="pmh_med3"><span class="txt"><span class="e">Stroke</span><span class="z">中風</span></span></label><label class="item"><input type="checkbox" id="pmh_med4"><span class="txt"><span class="e">PUD</span><span class="z">消化性潰瘍</span></span></label><label class="item"><input type="checkbox" id="pmh_med5"><span class="txt"><span class="e">Asthma</span><span class="z">氣喘</span></span></label><label class="item"><input type="checkbox" id="pmh_med6"><span class="txt"><span class="e">Liver disease</span><span class="z">肝臟疾病</span></span></label><label class="item"><input type="checkbox" id="pmh_med7"><span class="txt"><span class="e">Kidney disease</span><span class="z">腎臟疾病</span></span></label><label class="item"><input type="checkbox" id="pmh_med8"><span class="txt"><span class="e">Recent health check-up</span><span class="z">近期健康檢查</span></span></label></div>
+      <label class="field" style="margin-top:10px"><span class="lbl"><b>其他</b> <i>Others</i></span><input type="text" id="pmh_other" placeholder="例：Hyperlipidemia、HBV carrier、Hyperthyroidism"></label>
     </div>
 
     <div class="sub-h">外科開刀史 <span class="en">Operation</span></div>
@@ -325,19 +336,29 @@ html.pdf-mode .gallery img { max-width: 45%; }
       <span class="seg" id="ftMar"><button type="button" data-v="single" aria-pressed="false">未婚</button><button type="button" data-v="married" aria-pressed="true">已婚</button><button type="button" data-v="divorced" aria-pressed="false">離婚</button></span>
     </div>
     <div class="ft-bar">
+      <span class="lab">病人的</span>
       <button type="button" data-add="sib-M">＋ 兄弟</button>
       <button type="button" data-add="sib-F">＋ 姊妹</button>
       <button type="button" data-add="ch-M">＋ 兒子</button>
       <button type="button" data-add="ch-F">＋ 女兒</button>
     </div>
-    <div class="ft-scroll"><svg id="ftSvg" role="img" aria-label="家族樹" viewBox="0 0 488 470" width="488" height="470" style="width: max(100%, 303px); max-width: 488px; height: auto;"><path class="ln" d="M93 40L171 40"></path><path class="ln" d="M132 40L132 147"></path><path class="ln" d="M132 147L132 147"></path><path class="ln" d="M132 147L132 173"></path><path class="ln" d="M317 40L395 40"></path><path class="ln" d="M356 40L356 147"></path><path class="ln" d="M356 147L356 147"></path><path class="ln" d="M356 147L356 173"></path><path class="ln" d="M149 190L339 190"></path><path class="ln" d="M244 190L244 297"></path><path class="ln" d="M244 297L244 297"></path><path class="ln" d="M244 297L244 323"></path><path class="ln" d="M261 340L339 340"></path><g class="node sel" data-node="pt" tabindex="0" role="button" aria-label="病人"><rect class="sym" x="227" y="323" width="34" height="34"></rect><text class="rel" x="244" y="373" text-anchor="middle">病人</text><path class="arrow" d="M201 371L221 353"></path><path class="arrowhead" d="M224 350l-9 2l5 5z"></path><text class="pt-lab" x="197" y="383" text-anchor="middle">P</text></g><g class="node" data-node="sp" tabindex="0" role="button" aria-label="配偶"><circle class="sym" cx="356" cy="340" r="17"></circle><text class="rel" x="356" y="373" text-anchor="middle">配偶</text></g><g class="node" data-node="fa" tabindex="0" role="button" aria-label="父親"><rect class="sym" x="115" y="173" width="34" height="34"></rect><text class="rel" x="132" y="223" text-anchor="middle">父親</text></g><g class="node" data-node="mo" tabindex="0" role="button" aria-label="母親"><circle class="sym" cx="356" cy="190" r="17"></circle><text class="rel" x="356" y="223" text-anchor="middle">母親</text></g><g class="node" data-node="pgf" tabindex="0" role="button" aria-label="爺爺"><rect class="sym" x="59" y="23" width="34" height="34"></rect><text class="rel" x="76" y="73" text-anchor="middle">爺爺</text></g><g class="node" data-node="pgm" tabindex="0" role="button" aria-label="奶奶"><circle class="sym" cx="188" cy="40" r="17"></circle><text class="rel" x="188" y="73" text-anchor="middle">奶奶</text></g><g class="node" data-node="mgf" tabindex="0" role="button" aria-label="外公"><rect class="sym" x="283" y="23" width="34" height="34"></rect><text class="rel" x="300" y="73" text-anchor="middle">外公</text></g><g class="node" data-node="mgm" tabindex="0" role="button" aria-label="外婆"><circle class="sym" cx="412" cy="40" r="17"></circle><text class="rel" x="412" y="73" text-anchor="middle">外婆</text></g></svg></div>
+    <div class="ft-bar">
+      <span class="lab">父親的</span>
+      <button type="button" data-add="fs-M">＋ 兄弟</button>
+      <button type="button" data-add="fs-F">＋ 姊妹</button>
+      <span class="lab">母親的</span>
+      <button type="button" data-add="ms-M">＋ 兄弟</button>
+      <button type="button" data-add="ms-F">＋ 姊妹</button>
+    </div>
+    <div class="ft-scroll"><svg id="ftSvg" role="img" aria-label="家族樹" viewBox="0 0 488 470" width="488" height="470" style="width: max(100%, 303px); max-width: 488px; height: auto;"><path class="ln" d="M93 40L171 40"></path><path class="ln" d="M132 40L132 147"></path><path class="ln" d="M132 147L132 147"></path><path class="ln" d="M132 147L132 173"></path><path class="ln" d="M317 40L395 40"></path><path class="ln" d="M356 40L356 147"></path><path class="ln" d="M356 147L356 147"></path><path class="ln" d="M356 147L356 173"></path><path class="ln" d="M149 190L339 190"></path><path class="ln" d="M244 190L244 297"></path><path class="ln" d="M244 297L244 297"></path><path class="ln" d="M244 297L244 323"></path><path class="ln" d="M261 340L339 340"></path><g class="node" data-node="fa" tabindex="0" role="button" aria-label="父親"><rect class="sym" x="115" y="173" width="34" height="34"></rect><text class="rel" x="132" y="223" text-anchor="middle">父親</text></g><g class="node" data-node="mo" tabindex="0" role="button" aria-label="母親"><circle class="sym" cx="356" cy="190" r="17"></circle><text class="rel" x="356" y="223" text-anchor="middle">母親</text></g><g class="node" data-node="pgf" tabindex="0" role="button" aria-label="爺爺"><rect class="sym" x="59" y="23" width="34" height="34"></rect><text class="rel" x="76" y="73" text-anchor="middle">爺爺</text></g><g class="node" data-node="pgm" tabindex="0" role="button" aria-label="奶奶"><circle class="sym" cx="188" cy="40" r="17"></circle><text class="rel" x="188" y="73" text-anchor="middle">奶奶</text></g><g class="node" data-node="mgf" tabindex="0" role="button" aria-label="外公"><rect class="sym" x="283" y="23" width="34" height="34"></rect><text class="rel" x="300" y="73" text-anchor="middle">外公</text></g><g class="node" data-node="mgm" tabindex="0" role="button" aria-label="外婆"><circle class="sym" cx="412" cy="40" r="17"></circle><text class="rel" x="412" y="73" text-anchor="middle">外婆</text></g><g class="node sel" data-node="pt" tabindex="0" role="button" aria-label="病人"><rect class="sym" x="227" y="323" width="34" height="34"></rect><text class="rel" x="244" y="373" text-anchor="middle">病人</text><path class="arrow" d="M201 371L221 353"></path><path class="arrowhead" d="M224 350l-9 2l5 5z"></path><text class="pt-lab" x="197" y="383" text-anchor="middle">P</text></g><g class="node" data-node="sp" tabindex="0" role="button" aria-label="配偶"><circle class="sym" cx="356" cy="340" r="17"></circle><text class="rel" x="356" y="373" text-anchor="middle">配偶</text></g></svg></div>
     <div class="ft-legend">
-      <span>□ 男　○ 女</span><span>實心＝有病史</span><span>斜線＝已歿</span><span>// ＝離婚</span><span>點選任一成員以編輯病史</span>
+      <span>□ 男　○ 女</span><span>實心＝有病史</span><span>斜線＝已歿</span><span>// ＝離婚</span><span>點選任一成員以編輯稱謂、排行、病史</span>
     </div>
     <div class="ft-edit" id="ftEdit">
     <h4><span>編輯：病人</span></h4>
     <div class="fields">
       <label class="field"><span class="lbl"><b>稱謂</b> <i>Relation</i></span><input type="text" id="ftRel" data-nosave="" value="病人"></label>
+      <label class="field"><span class="lbl"><b>排行</b> <i>Birth order（1 = 老大）</i></span><input type="number" id="ftRank" data-nosave="" inputmode="numeric" min="1" max="30" value="" placeholder="例：2"></label>
       <label class="field"><span class="lbl"><b>年齡／死因</b> <i>Age / Cause of death</i></span><input type="text" id="ftAge" data-nosave="" value="" placeholder="例：72y 或 d. 80y MI"></label>
     </div>
     <div class="inline" style="margin-top:10px">
@@ -362,6 +383,7 @@ html.pdf-mode .gallery img { max-width: 45%; }
   <section class="card" id="s-ros">
     <h2>6. 系統性回顧 <span class="en">Review of Systems</span> <span class="tag">陽性 Positive</span></h2>
     <p class="note">勾選有症狀者 (Check symptoms that are present).</p>
+    <p class="ros-pos" id="rosPos"></p>
     <div id="ros-groups"><div class="group"><h3>全身狀況 <span class="en">General conditions</span></h3>
   <div class="grid"><label class="item"><input type="checkbox" id="ros_gen_0"><span class="txt"><span class="e">Fever</span><span class="z">發燒</span></span></label><label class="item"><input type="checkbox" id="ros_gen_1"><span class="txt"><span class="e">Chills</span><span class="z">寒顫</span></span></label><label class="item"><input type="checkbox" id="ros_gen_2"><span class="txt"><span class="e">Change of appetite</span><span class="z">食慾改變</span></span></label><label class="item"><input type="checkbox" id="ros_gen_3"><span class="txt"><span class="e">Fatigue</span><span class="z">疲倦</span></span></label><label class="item"><input type="checkbox" id="ros_gen_4"><span class="txt"><span class="e">Body weight loss</span><span class="z">體重減輕</span></span></label></div></div><div class="group"><h3>頭、眼、耳、鼻、喉 <span class="en">Head, Eye, Ear, Nose, Throat</span></h3>
   <div class="grid"><label class="item"><input type="checkbox" id="ros_hent_0"><span class="txt"><span class="e">Headache</span><span class="z">頭痛</span></span></label><label class="item"><input type="checkbox" id="ros_hent_1"><span class="txt"><span class="e">Dizziness</span><span class="z">頭暈</span></span></label><label class="item"><input type="checkbox" id="ros_hent_2"><span class="txt"><span class="e">Blurred vision</span><span class="z">視力模糊</span></span></label><label class="item"><input type="checkbox" id="ros_hent_3"><span class="txt"><span class="e">Tinnitus</span><span class="z">耳鳴</span></span></label><label class="item"><input type="checkbox" id="ros_hent_4"><span class="txt"><span class="e">Nasal bleeding</span><span class="z">鼻出血</span></span></label><label class="item"><input type="checkbox" id="ros_hent_5"><span class="txt"><span class="e">Nasal discharge</span><span class="z">流鼻涕</span></span></label><label class="item"><input type="checkbox" id="ros_hent_6"><span class="txt"><span class="e">Gum bleeding</span><span class="z">牙齦出血</span></span></label><label class="item"><input type="checkbox" id="ros_hent_7"><span class="txt"><span class="e">Oral ulcer</span><span class="z">口腔潰瘍</span></span></label><label class="item"><input type="checkbox" id="ros_hent_8"><span class="txt"><span class="e">Throat ache</span><span class="z">喉嚨痛</span></span></label></div></div><div class="group"><h3>呼吸系統 <span class="en">Respiratory</span></h3>
@@ -436,7 +458,7 @@ const DX = [["HTN","高血壓"],["DM","糖尿病"],["Hyperlipidemia","高血脂"
 
 /* ---------- state ---------- */
 function blankFT() {
-  return { sex: "M", mar: "married", sel: "pt", seq: 0, sibs: [], kids: [], nodes: {
+  return { sex: "M", mar: "married", sel: "pt", seq: 0, sibs: [], kids: [], fsibs: [], msibs: [], nodes: {
     pgf: {rel:"爺爺", sex:"M"}, pgm: {rel:"奶奶", sex:"F"}, mgf: {rel:"外公", sex:"M"}, mgm: {rel:"外婆", sex:"F"},
     fa: {rel:"父親", sex:"M"}, mo: {rel:"母親", sex:"F"}, pt: {rel:"病人", sex:"M"}, sp: {rel:"配偶", sex:"F"}
   }};
@@ -508,39 +530,52 @@ document.addEventListener("click", e => {
 
 /* ---------- family tree ---------- */
 const W = 112, ROWH = 150, R = 17, TOP = 40;
+const SIBSHIP_IDS = () => ["pt", "fa", "mo", ...S.ft.sibs, ...S.ft.kids, ...(S.ft.fsibs || []), ...(S.ft.msibs || [])];
+const byRank = (ft, ids) => ids.slice().sort((a, b) => (ft.nodes[a].rank || 99) - (ft.nodes[b].rank || 99));
 function ftLayout() {
   const ft = S.ft, pos = {};
+  ft.fsibs = ft.fsibs || []; ft.msibs = ft.msibs || [];
   const showSp = ft.mar !== "single";
-  const sibship = [...ft.sibs.slice(0, Math.ceil(ft.sibs.length / 2)), "pt", ...ft.sibs.slice(Math.ceil(ft.sibs.length / 2))];
-  // keep patient at the right of siblings so the spouse sits beside the patient
-  const order = [...ft.sibs, "pt"];
-  order.forEach((id, i) => pos[id] = [i * W, TOP + 2 * ROWH]);
-  const ptx = pos.pt[0];
-  if (showSp) pos.sp = [ptx + W, TOP + 2 * ROWH];
-  const mid = (pos[order[0]][0] + ptx) / 2;
-  pos.fa = [mid - W, TOP + ROWH]; pos.mo = [mid + W, TOP + ROWH];
-  pos.pgf = [pos.fa[0] - W / 2, TOP]; pos.pgm = [pos.fa[0] + W / 2, TOP];
-  pos.mgf = [pos.mo[0] - W / 2, TOP]; pos.mgm = [pos.mo[0] + W / 2, TOP];
-  const cm = showSp ? ptx + W / 2 : ptx;
-  const n = ft.kids.length;
-  ft.kids.forEach((id, i) => pos[id] = [cm + (i - (n - 1) / 2) * W, TOP + 3 * ROWH]);
+  const y0 = TOP, y1 = TOP + ROWH, y2 = TOP + 2 * ROWH, y3 = TOP + 3 * ROWH;
+  // parents' generation: father's sibship ends with the father, mother's starts with the mother, so the couple stays adjacent
+  const pat = [...byRank(ft, ft.fsibs), "fa"], mat = ["mo", ...byRank(ft, ft.msibs)];
+  const nf = ft.fsibs.length, nm = ft.msibs.length;
+  const gap = Math.max(W, 2 * W - (nf + nm) * W / 2);   // keeps the two grandparent couples apart
+  pat.forEach((id, i) => pos[id] = [(i - nf) * W, y1]);
+  mat.forEach((id, i) => pos[id] = [gap + i * W, y1]);
+  const cxp = -nf * W / 2, cxm = gap + nm * W / 2;
+  pos.pgf = [cxp - W / 2, y0]; pos.pgm = [cxp + W / 2, y0];
+  pos.mgf = [cxm - W / 2, y0]; pos.mgm = [cxm + W / 2, y0];
+  // patient's sibship centred under the parents; patient rightmost so the spouse sits beside
+  const order = [...byRank(ft, ft.sibs), "pt"], mid = gap / 2, n = order.length;
+  order.forEach((id, i) => pos[id] = [mid + (i - (n - 1) / 2) * W, y2]);
+  if (showSp) pos.sp = [pos.pt[0] + W, y2];
+  const kids = byRank(ft, ft.kids), nk = kids.length;
+  const cm = showSp ? pos.pt[0] + W / 2 : pos.pt[0];
+  kids.forEach((id, i) => pos[id] = [cm + (i - (nk - 1) / 2) * W, y3]);
   let minX = Infinity, maxX = -Infinity;
   Object.values(pos).forEach(p => { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); });
   const off = W / 2 + 20 - minX;
   Object.values(pos).forEach(p => p[0] += off);
-  return { pos, width: maxX - minX + W + 40, height: TOP + 3 * ROWH + (n ? 120 : -20), showSp, order };
+  return { pos, width: maxX - minX + W + 40, height: TOP + 3 * ROWH + (nk ? 120 : -20), showSp, order, pat, mat, kids };
 }
 function wrapDx(list) {
   const lines = [];
-  list.forEach(d => { const s = String(d); for (let i = 0; i < s.length; i += 12) lines.push(s.slice(i, i + 12)); });
+  list.forEach(d => {
+    let cur = "", w = 0;
+    for (const ch of String(d)) {
+      const cw = /[\x00-\x7f]/.test(ch) ? 0.55 : 1;
+      if (w + cw > 8 && cur) { lines.push(cur); cur = ""; w = 0; }
+      cur += ch; w += cw;
+    }
+    if (cur) lines.push(cur);
+  });
   return lines.length > 4 ? [...lines.slice(0, 3), "…"] : lines;
 }
-function renderFT() {
+function ftSvgMarkup() {
   const ft = S.ft, L = ftLayout(), P = L.pos;
-  const nodeIds = Object.keys(P);
   let g = "";
   const line = (x1, y1, x2, y2) => `<path class="ln" d="M${x1} ${y1}L${x2} ${y2}"/>`;
-  // marriage lines + descent
   const couple = (a, b, kids, divorced) => {
     const y = P[a][1], x1 = P[a][0] + R, x2 = P[b][0] - R;
     let s = line(x1, y, x2, y);
@@ -554,17 +589,16 @@ function renderFT() {
     }
     return s;
   };
-  g += couple("pgf", "pgm", ["fa"], false);
-  g += couple("mgf", "mgm", ["mo"], false);
+  g += couple("pgf", "pgm", L.pat, false);
+  g += couple("mgf", "mgm", L.mat, false);
   g += couple("fa", "mo", L.order, false);
-  if (L.showSp) g += couple("pt", "sp", ft.kids, ft.mar === "divorced");
-  else if (ft.kids.length) {
-    const x = P.pt[0], bar = P[ft.kids[0]][1] - R - 26, xs = ft.kids.map(k => P[k][0]);
+  if (L.showSp) g += couple("pt", "sp", L.kids, ft.mar === "divorced");
+  else if (L.kids.length) {
+    const x = P.pt[0], bar = P[L.kids[0]][1] - R - 26, xs = L.kids.map(k => P[k][0]);
     g += line(x, P.pt[1] + R + 54, x, bar) + line(Math.min(x, ...xs), bar, Math.max(x, ...xs), bar);
-    ft.kids.forEach(k => g += line(P[k][0], bar, P[k][0], P[k][1] - R));
+    L.kids.forEach(k => g += line(P[k][0], bar, P[k][0], P[k][1] - R));
   }
-  // nodes
-  nodeIds.forEach(id => {
+  Object.keys(P).forEach(id => {
     const n = ft.nodes[id], [x, y] = P[id], dx = n.dx || [];
     const aff = dx.length ? " aff" : "";
     const shape = n.sex === "F"
@@ -573,32 +607,46 @@ function renderFT() {
     const dead = n.dead ? `<path class="slash" d="M${x - R - 6} ${y + R + 6}L${x + R + 6} ${y - R - 6}"/>` : "";
     let t = `<text class="rel" x="${x}" y="${y + R + 16}" text-anchor="middle">${esc(n.rel)}</text>`;
     let ty = y + R + 30;
-    if (n.age) { t += `<text class="age" x="${x}" y="${ty}" text-anchor="middle">${esc(n.age)}</text>`; ty += 14; }
+    const sub = [n.rank ? "排行" + n.rank : "", n.age || ""].filter(Boolean).join(" · ");
+    if (sub) { t += `<text class="age" x="${x}" y="${ty}" text-anchor="middle">${esc(sub)}</text>`; ty += 14; }
     wrapDx(dx).forEach(l => { t += `<text class="dx" x="${x}" y="${ty}" text-anchor="middle">${esc(l)}</text>`; ty += 13; });
     let arrow = "";
     if (id === "pt") arrow = `<path class="arrow" d="M${x - R - 26} ${y + R + 14}L${x - R - 6} ${y + R - 4}"/><path class="arrowhead" d="M${x - R - 3} ${y + R - 7}l-9 2l5 5z"/><text class="pt-lab" x="${x - R - 30}" y="${y + R + 26}" text-anchor="middle">P</text>`;
     g += `<g class="node${ft.sel === id ? " sel" : ""}" data-node="${id}" tabindex="0" role="button" aria-label="${esc(n.rel)}">${shape}${dead}${t}${arrow}</g>`;
   });
-  const svg = $("ftSvg");
+  return { g, L };
+}
+/* draw the tree + summary only; the editor is left alone so typing (incl. IME composition) is never interrupted */
+function drawFT() {
+  const { g, L } = ftSvgMarkup(), svg = $("ftSvg");
   svg.setAttribute("viewBox", `0 0 ${L.width} ${L.height}`);
   svg.setAttribute("width", L.width); svg.setAttribute("height", L.height);
   svg.style.width = `max(100%, ${Math.round(L.width * 0.62)}px)`;
   svg.style.maxWidth = L.width + "px"; svg.style.height = "auto";
   svg.innerHTML = g;
+  renderFTSummary();
+}
+function renderFT() {
+  const ft = S.ft;
+  drawFT();
   document.querySelectorAll("#ftSex button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === ft.sex)));
   document.querySelectorAll("#ftMar button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === ft.mar)));
-  renderFTEdit(); renderFTSummary();
+  renderFTEdit();
 }
 function renderFTEdit() {
-  const ft = S.ft, id = ft.sel in ft.nodes && (id => id !== "sp" || ft.mar !== "single")(ft.sel) ? ft.sel : "pt";
+  const ft = S.ft;
+  let id = ft.sel;
+  if (!ft.nodes[id] || (id === "sp" && ft.mar === "single")) id = "pt";
   ft.sel = id;
   const n = ft.nodes[id], dx = n.dx || [];
-  const removable = ft.sibs.includes(id) || ft.kids.includes(id);
+  const removable = [...ft.sibs, ...ft.kids, ...(ft.fsibs || []), ...(ft.msibs || [])].includes(id);
   const sexEditable = !["pgf","pgm","mgf","mgm","fa","mo","pt"].includes(id);
+  const hasRank = SIBSHIP_IDS().includes(id);
   $("ftEdit").innerHTML = `
     <h4><span>編輯：${esc(n.rel)}</span>${removable ? `<button type="button" class="danger" id="ftDel">移除此成員</button>` : ""}</h4>
     <div class="fields">
       <label class="field"><span class="lbl"><b>稱謂</b> <i>Relation</i></span><input type="text" id="ftRel" data-nosave value="${esc(n.rel)}"></label>
+      ${hasRank ? `<label class="field"><span class="lbl"><b>排行</b> <i>Birth order（1 = 老大）</i></span><input type="number" id="ftRank" data-nosave inputmode="numeric" min="1" max="30" value="${n.rank || ""}" placeholder="例：2"></label>` : ""}
       <label class="field"><span class="lbl"><b>年齡／死因</b> <i>Age / Cause of death</i></span><input type="text" id="ftAge" data-nosave value="${esc(n.age || "")}" placeholder="例：72y 或 d. 80y MI"></label>
     </div>
     <div class="inline" style="margin-top:10px">
@@ -614,22 +662,30 @@ function renderFTSummary() {
   const ft = S.ft, P = ftLayout().pos;
   const rows = Object.keys(P).map(id => ft.nodes[id]).filter(n => (n.dx && n.dx.length) || n.dead);
   $("ftSummary").innerHTML = rows.length
-    ? `<table><tr><th>成員</th><th>病史</th><th>狀態</th></tr>${rows.map(n => `<tr><td>${esc(n.rel)}</td><td>${esc((n.dx || []).join("、") || "—")}</td><td>${n.dead ? "已歿" : ""} ${esc(n.age || "")}</td></tr>`).join("")}</table>`
+    ? `<table><tr><th>成員</th><th>病史</th><th>狀態</th></tr>${rows.map(n => `<tr><td>${esc(n.rel)}${n.rank ? `<span class="en">（排行${n.rank}）</span>` : ""}</td><td>${esc((n.dx || []).join("、") || "—")}</td><td>${n.dead ? "已歿" : ""} ${esc(n.age || "")}</td></tr>`).join("")}</table>`
     : `<p class="note">尚未標記任何家族病史。點選家族樹中的成員即可加入。</p>`;
 }
-function ftNew(sex, kind) {
-  const ft = S.ft, id = kind + (++ft.seq);
-  const rel = kind === "s" ? (sex === "M" ? "兄弟" : "姊妹") : (sex === "M" ? "兒子" : "女兒");
-  ft.nodes[id] = { rel, sex };
-  (kind === "s" ? ft.sibs : ft.kids).push(id);
+const FT_KINDS = {
+  sib: { list: "sibs",  rel: { M: "兄弟", F: "姊妹" } },
+  ch:  { list: "kids",  rel: { M: "兒子", F: "女兒" } },
+  fs:  { list: "fsibs", rel: { M: "伯叔", F: "姑姑" } },
+  ms:  { list: "msibs", rel: { M: "舅舅", F: "阿姨" } }
+};
+function ftNew(kind, sex) {
+  const ft = S.ft, k = FT_KINDS[kind]; if (!k) return;
+  ft[k.list] = ft[k.list] || [];
+  const id = kind + (++ft.seq);
+  ft.nodes[id] = { rel: k.rel[sex], sex };
+  ft[k.list].push(id);
   ft.sel = id; renderFT(); save();
+  const r = $("ftRank"); if (r) r.focus();
 }
 $("s-fh").addEventListener("click", e => {
   const ft = S.ft;
   const node = e.target.closest("[data-node]");
   if (node) { ft.sel = node.dataset.node; renderFT(); save(); return; }
   const add = e.target.closest("[data-add]");
-  if (add) { const [k, s] = add.dataset.add.split("-"); ftNew(s, k === "sib" ? "s" : "c"); return; }
+  if (add) { const [k, s] = add.dataset.add.split("-"); ftNew(k, s); return; }
   const sx = e.target.closest("#ftSex button");
   if (sx) { ft.sex = sx.dataset.v; ft.nodes.pt.sex = ft.sex; ft.nodes.sp.sex = ft.sex === "M" ? "F" : "M"; renderFT(); save(); return; }
   const mr = e.target.closest("#ftMar button");
@@ -643,7 +699,8 @@ $("s-fh").addEventListener("click", e => {
   const dd = e.target.closest("[data-dxdel]");
   if (dd) { ft.nodes[ft.sel].dx.splice(+dd.dataset.dxdel, 1); renderFT(); save(); return; }
   if (e.target.id === "ftDel") {
-    const id = ft.sel; ft.sibs = ft.sibs.filter(x => x !== id); ft.kids = ft.kids.filter(x => x !== id);
+    const id = ft.sel;
+    ["sibs", "kids", "fsibs", "msibs"].forEach(l => { ft[l] = (ft[l] || []).filter(x => x !== id); });
     delete ft.nodes[id]; ft.sel = "pt"; renderFT(); save();
   }
 });
@@ -654,27 +711,20 @@ function addFreeDx() {
   renderFT(); save(); $("ftDxIn").focus();
 }
 $("s-fh").addEventListener("keydown", e => {
+  if (e.isComposing || e.keyCode === 229) return;   // let the IME finish composing
   if (e.target.id === "ftDxIn" && e.key === "Enter") { e.preventDefault(); addFreeDx(); }
   const node = e.target.closest && e.target.closest("[data-node]");
   if (node && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); S.ft.sel = node.dataset.node; renderFT(); save(); }
 });
 $("s-fh").addEventListener("input", e => {
   const n = S.ft.nodes[S.ft.sel]; if (!n) return;
-  if (e.target.id === "ftRel") { n.rel = e.target.value; refreshFTGraphic(); }
-  if (e.target.id === "ftAge") { n.age = e.target.value; refreshFTGraphic(); }
+  if (e.target.id === "ftRel") { n.rel = e.target.value; drawFT(); save(); }
+  if (e.target.id === "ftAge") { n.age = e.target.value; drawFT(); save(); }
+  if (e.target.id === "ftRank") { const v = parseInt(e.target.value, 10); if (v > 0) n.rank = v; else delete n.rank; drawFT(); save(); }
 });
 $("s-fh").addEventListener("change", e => {
-  if (e.target.id === "ftDead") { S.ft.nodes[S.ft.sel].dead = e.target.checked; refreshFTGraphic(); }
+  if (e.target.id === "ftDead") { S.ft.nodes[S.ft.sel].dead = e.target.checked; drawFT(); save(); }
 });
-/* redraw the tree without rebuilding the editor, so typing keeps focus */
-function refreshFTGraphic() {
-  const keep = $("ftEdit").innerHTML;
-  const focusId = document.activeElement && document.activeElement.id;
-  const caret = document.activeElement && document.activeElement.selectionStart;
-  renderFT();
-  if (focusId) { const el = $(focusId); if (el) { el.focus(); try { el.setSelectionRange(caret, caret); } catch (e) {} } }
-  save();
-}
 
 /* ---------- PE selector and panels ---------- */
 $("pePick").innerHTML = PE.map(p => `<button type="button" class="chip" data-pe="${p.id}" aria-pressed="false">${esc(p.zh)}<small>${esc(p.en)}</small></button>`).join("");
@@ -772,6 +822,17 @@ function preparePrint() {
     el.insertAdjacentElement("afterend", v);
   });
   document.querySelectorAll("details.steps").forEach(d => d.open = true);
+  // checked state as real markup: html2canvas and some print engines ignore the live checked property and :has()
+  document.querySelectorAll(".wrap label.item, .wrap label.step").forEach(l => {
+    const c = l.querySelector('input[type="checkbox"]'); if (!c) return;
+    const on = c.checked; l.classList.toggle("on", on); c.toggleAttribute("checked", on);
+    let box = l.querySelector(".pbox");
+    if (!box) { box = document.createElement("span"); box.className = "pbox"; box.setAttribute("aria-hidden", "true"); c.insertAdjacentElement("afterend", box); }
+    box.textContent = on ? "✓" : "";
+  });
+  document.querySelectorAll(".wrap input[type=text]").forEach(el => el.setAttribute("value", el.value));
+  const pos = ROS.flatMap(g => g.items.map((it, i) => ({ id: `ros_${g.id}_${i}`, t: `${it[0]}（${it[1]}）` }))).filter(x => $(x.id) && $(x.id).checked).map(x => x.t);
+  $("rosPos").textContent = pos.length ? "陽性項目 Positive：" + pos.join("、") : "無陽性項目 All negative";
   const d = new Date(), ds = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
   $("ph_name").textContent = $("pt_name").value || "—"; $("ph_chart").textContent = $("pt_chart").value || "—";
   $("ph_ward").textContent = $("pt_ward").value || "—"; $("ph_date").textContent = ds; $("pdfDate").textContent = "Generated " + ds;
